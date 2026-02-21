@@ -11,17 +11,17 @@ class SGProEngine:
         self.cable_db = {
             1.5: 25, 2.5: 33, 4: 43, 6: 56, 10: 77, 16: 102, 25: 135, 35: 166, 
             50: 201, 70: 255, 95: 309, 120: 358, 150: 410, 185: 469, 240: 551, 300: 627,
-            400: 750, 500: 860, 630: 980  # Additional larger cables
+            400: 750, 500: 860, 630: 980
         }
         
-        # Cable diameter database (approximate overall diameter in mm)
+        # Cable diameter database
         self.cable_diameters = {
             1.5: 12, 2.5: 13, 4: 14, 6: 15, 10: 17, 16: 19, 25: 22, 35: 24,
             50: 27, 70: 30, 95: 33, 120: 36, 150: 39, 185: 42, 240: 46, 300: 50,
             400: 55, 500: 60, 630: 65
         }
         
-        # Cable resistance and reactance (Ohms/km) for voltage drop calculation
+        # Cable resistance and reactance
         self.cable_impedance = {
             1.5: {"r": 14.8, "x": 0.145},
             2.5: {"r": 8.91, "x": 0.135},
@@ -44,126 +44,471 @@ class SGProEngine:
             630: {"r": 0.0395, "x": 0.085}
         }
         
-        # Cable tray sizing factors (based on SS 638 / IEC 61537)
-        self.tray_fill_factors = {
-            "perforated": 0.4,  # 40% maximum fill
-            "ladder": 0.4,      # 40% maximum fill
-            "solid": 0.3,       # 30% maximum fill
-            "wire_mesh": 0.35   # 35% maximum fill
-        }
-        
-        # Standard tray sizes (width in mm)
-        self.standard_tray_sizes = [50, 100, 150, 200, 300, 400, 450, 500, 600, 750, 900]
-        
-        # Room electrical load database (based on SS 638 and typical Singapore practices)
-        self.room_load_database = {
-            "Office Areas": {
-                "description": "General office spaces",
-                "lighting_load": 15,  # W/m²
-                "socket_load": 25,     # W/m² (general purpose outlets)
-                "equipment_load": 30,   # W/m² (computers, printers, etc.)
-                "ac_load": 80,          # W/m² (air conditioning)
-                "diversity_factor": 0.7,
-                "typical_equipment": ["LED lights", "13A sockets", "Computers", "Printers", "Water coolers"]
+        # Lighting design database (based on SS 531 / CIBSE / IES)
+        self.lighting_standards = {
+            "Office (Open Plan)": {
+                "recommended_lux": 400,
+                "led_watt_per_m2": 8,
+                "fitting_type": "LED Recessed Panel 600x600mm",
+                "lumens_per_fitting": 3600,
+                "watt_per_fitting": 36,
+                "mounting_height": "2.8m",
+                "color_temp": "4000K (Cool White)",
+                "cri_requirement": ">80"
             },
-            "Meeting Rooms": {
-                "description": "Conference and meeting areas",
-                "lighting_load": 20,
-                "socket_load": 30,
-                "equipment_load": 50,   # Projectors, AV equipment
-                "ac_load": 100,
-                "diversity_factor": 0.8,
-                "typical_equipment": ["AV systems", "Projectors", "Video conferencing", "Laptop charging"]
+            "Office (Private)": {
+                "recommended_lux": 500,
+                "led_watt_per_m2": 10,
+                "fitting_type": "LED Recessed Panel 600x600mm",
+                "lumens_per_fitting": 4000,
+                "watt_per_fitting": 40,
+                "mounting_height": "2.8m",
+                "color_temp": "4000K (Cool White)",
+                "cri_requirement": ">80"
             },
-            "IT Server Room": {
-                "description": "Data center / server room",
-                "lighting_load": 10,
-                "socket_load": 15,
-                "equipment_load": 500,  # Servers, networking equipment
-                "ac_load": 400,          # Precision cooling
-                "diversity_factor": 1.0,
-                "typical_equipment": ["Servers", "Racks", "UPS", "PDU", "Network switches"],
-                "special_requirements": ["UPS backup", "Generator essential", "Dedicated AC", "Fire suppression"]
+            "Meeting Room": {
+                "recommended_lux": 500,
+                "led_watt_per_m2": 12,
+                "fitting_type": "LED Downlight / Panel (Dimmable)",
+                "lumens_per_fitting": 3500,
+                "watt_per_fitting": 35,
+                "mounting_height": "2.6m",
+                "color_temp": "3500K-4000K",
+                "cri_requirement": ">90"
             },
-            "Electrical Switchroom": {
-                "description": "MSB/MDB/DB locations",
-                "lighting_load": 10,
-                "socket_load": 10,
-                "equipment_load": 5,      # Control panels, etc.
-                "ac_load": 50,            # Cooling for switchgear
-                "diversity_factor": 0.9,
-                "typical_equipment": ["Switchboards", "Control panels", "MCC", "Capacitor banks"],
-                "special_requirements": ["Ventilation", "Emergency lighting", "Fire detection"]
+            "Corridor / Lobby": {
+                "recommended_lux": 150,
+                "led_watt_per_m2": 5,
+                "fitting_type": "LED Downlight / Bulkhead",
+                "lumens_per_fitting": 1500,
+                "watt_per_fitting": 15,
+                "mounting_height": "2.8m",
+                "color_temp": "4000K",
+                "cri_requirement": ">80"
             },
-            "Generator Room": {
-                "description": "Generator set location",
-                "lighting_load": 15,
-                "socket_load": 10,
-                "equipment_load": 0,      # Generator load calculated separately
-                "ac_load": 30,             # Ventilation fans
-                "diversity_factor": 0.8,
-                "typical_equipment": ["Generator set", "ATS", "Fuel tank", "Battery charger"],
-                "special_requirements": ["Exhaust extraction", "Fuel leak detection", "Sound attenuation"]
-            },
-            "Pump Room": {
-                "description": "Fire pump / water pump room",
-                "lighting_load": 10,
-                "socket_load": 10,
-                "equipment_load": 0,      # Pump loads calculated separately
-                "ac_load": 20,             # Ventilation
-                "diversity_factor": 0.7,
-                "typical_equipment": ["Fire pumps", "Jockey pumps", "Control panels", "Flow switches"],
-                "special_requirements": ["Fire rated wiring", "Emergency stop", "Float switches"]
+            "Staircase": {
+                "recommended_lux": 100,
+                "led_watt_per_m2": 4,
+                "fitting_type": "LED Wall Light / Bulkhead",
+                "lumens_per_fitting": 1000,
+                "watt_per_fitting": 12,
+                "mounting_height": "2.5m",
+                "color_temp": "4000K",
+                "cri_requirement": ">80",
+                "emergency_required": "100%"
             },
             "Car Park": {
-                "description": "Basement or multi-storey carpark",
-                "lighting_load": 5,        # W/m² (LED lighting)
-                "socket_load": 2,           # Car park sockets
-                "equipment_load": 3,        # Ventilation fans, barriers
-                "ac_load": 0,               # Natural ventilation typically
-                "diversity_factor": 0.6,
-                "typical_equipment": ["LED lights", "Ventilation fans", "Car park barriers", "EV chargers"],
-                "special_requirements": ["CO monitoring", "Ventilation control", "Emergency lighting"]
+                "recommended_lux": 75,
+                "led_watt_per_m2": 3,
+                "fitting_type": "LED Batten / Highbay",
+                "lumens_per_fitting": 4000,
+                "watt_per_fitting": 40,
+                "mounting_height": "3-4m",
+                "color_temp": "5000K (Daylight)",
+                "cri_requirement": ">70"
             },
-            "Corridor / Staircase": {
-                "description": "Common areas and escape routes",
-                "lighting_load": 8,
-                "socket_load": 1,
-                "equipment_load": 0,
-                "ac_load": 0,
-                "diversity_factor": 1.0,
-                "typical_equipment": ["Emergency lights", "Exit signs"],
-                "special_requirements": ["100% emergency lighting backup", "Fire rated"]
+            "Retail Shop": {
+                "recommended_lux": 750,
+                "led_watt_per_m2": 18,
+                "fitting_type": "LED Track Light / Downlight",
+                "lumens_per_fitting": 3000,
+                "watt_per_fitting": 30,
+                "mounting_height": "3m",
+                "color_temp": "3000K-3500K (Warm)",
+                "cri_requirement": ">90"
             },
-            "Toilet / Pantry": {
-                "description": "Washrooms and kitchenettes",
-                "lighting_load": 12,
-                "socket_load": 10,
-                "equipment_load": 15,      # Water heaters, coffee machines
-                "ac_load": 20,              # Exhaust fans
-                "diversity_factor": 0.5,
-                "typical_equipment": ["Exhaust fans", "Water heaters", "Hand dryers", "Kitchen appliances"]
+            "Restaurant": {
+                "recommended_lux": 200,
+                "led_watt_per_m2": 10,
+                "fitting_type": "LED Decorative / Ambient",
+                "lumens_per_fitting": 2000,
+                "watt_per_fitting": 20,
+                "mounting_height": "2.5m",
+                "color_temp": "2700K-3000K (Warm)",
+                "cri_requirement": ">90"
             },
-            "Loading Bay": {
-                "description": "Goods delivery area",
-                "lighting_load": 10,
-                "socket_load": 10,
-                "equipment_load": 20,      # Dock levellers, doors
-                "ac_load": 0,
-                "diversity_factor": 0.6,
-                "typical_equipment": ["Dock levellers", "Roller shutters", "Charging points"]
+            "Kitchen (Commercial)": {
+                "recommended_lux": 500,
+                "led_watt_per_m2": 15,
+                "fitting_type": "LED Vapor-tight / Batten",
+                "lumens_per_fitting": 4000,
+                "watt_per_fitting": 40,
+                "mounting_height": "3m",
+                "color_temp": "4000K",
+                "cri_requirement": ">80",
+                "ip_rating": "IP65"
             },
-            "FAHU / AC Plant Room": {
-                "description": "Air handling units and chiller plant",
-                "lighting_load": 10,
-                "socket_load": 10,
-                "equipment_load": 0,      # HVAC loads calculated separately
-                "ac_load": 0,
-                "diversity_factor": 0.8,
-                "typical_equipment": ["AHU", "Chillers", "Pumps", "Control panels"],
-                "special_requirements": ["VFDs", "BMS connection", "Maintenance isolation"]
+            "Warehouse / Store": {
+                "recommended_lux": 200,
+                "led_watt_per_m2": 6,
+                "fitting_type": "LED Highbay",
+                "lumens_per_fitting": 15000,
+                "watt_per_fitting": 150,
+                "mounting_height": "6-10m",
+                "color_temp": "5000K",
+                "cri_requirement": ">70"
+            },
+            "Classroom": {
+                "recommended_lux": 500,
+                "led_watt_per_m2": 12,
+                "fitting_type": "LED Panel / Troffer",
+                "lumens_per_fitting": 4000,
+                "watt_per_fitting": 40,
+                "mounting_height": "2.8m",
+                "color_temp": "4000K",
+                "cri_requirement": ">80"
+            },
+            "Laboratory": {
+                "recommended_lux": 750,
+                "led_watt_per_m2": 18,
+                "fitting_type": "LED Cleanroom / Sealed",
+                "lumens_per_fitting": 5000,
+                "watt_per_fitting": 50,
+                "mounting_height": "3m",
+                "color_temp": "5000K",
+                "cri_requirement": ">90"
+            },
+            "Gym / Fitness": {
+                "recommended_lux": 300,
+                "led_watt_per_m2": 10,
+                "fitting_type": "LED Highbay / Batten",
+                "lumens_per_fitting": 8000,
+                "watt_per_fitting": 80,
+                "mounting_height": "4-6m",
+                "color_temp": "5000K",
+                "cri_requirement": ">80"
+            },
+            "Toilet / Bathroom": {
+                "recommended_lux": 150,
+                "led_watt_per_m2": 6,
+                "fitting_type": "LED Downlight (IP44)",
+                "lumens_per_fitting": 1200,
+                "watt_per_fitting": 12,
+                "mounting_height": "2.5m",
+                "color_temp": "4000K",
+                "cri_requirement": ">80",
+                "ip_rating": "IP44"
+            },
+            "Plant Room / Technical": {
+                "recommended_lux": 200,
+                "led_watt_per_m2": 6,
+                "fitting_type": "LED Batten / Vapor-tight",
+                "lumens_per_fitting": 3000,
+                "watt_per_fitting": 30,
+                "mounting_height": "3m",
+                "color_temp": "4000K",
+                "cri_requirement": ">70"
             }
         }
+        
+        # Socket outlet requirements (based on SS 638 and typical practice)
+        self.socket_outlet_standards = {
+            "Office (Open Plan)": {
+                "density": "1 double socket per 5-8 m²",
+                "spacing": "Along walls every 2.5-3m",
+                "type": "13A BS 1363, 2-gang",
+                "circuit_rating": "20A per ring circuit",
+                "max_sockets_per_circuit": 8,
+                "special_requirements": ["USB sockets at workstations", "Floor boxes in open areas"]
+            },
+            "Office (Private)": {
+                "density": "4-6 double sockets per room",
+                "spacing": "Each wall with sockets",
+                "type": "13A BS 1363, 2-gang",
+                "circuit_rating": "20A ring circuit",
+                "max_sockets_per_circuit": 8,
+                "special_requirements": ["Data sockets adjacent", "USB charging points"]
+            },
+            "Meeting Room": {
+                "density": "2 double sockets per wall",
+                "spacing": "Conference table with floor boxes",
+                "type": "13A BS 1363, 2-gang + USB",
+                "circuit_rating": "20A ring circuit",
+                "max_sockets_per_circuit": 6,
+                "special_requirements": ["Floor boxes for AV", "Retractable socket modules"]
+            },
+            "Corridor": {
+                "density": "1 double socket per 15-20m",
+                "spacing": "For cleaning equipment",
+                "type": "13A BS 1363, 1-gang",
+                "circuit_rating": "20A radial",
+                "max_sockets_per_circuit": 6,
+                "special_requirements": ["Maintenance access"]
+            },
+            "Car Park": {
+                "density": "1 socket per 100m²",
+                "spacing": "For maintenance equipment",
+                "type": "13A BS 1363, IP66 weatherproof",
+                "circuit_rating": "20A radial",
+                "max_sockets_per_circuit": 4,
+                "special_requirements": ["Weatherproof covers", "RCBO protection"]
+            },
+            "Retail Shop": {
+                "density": "1 double socket per 10m²",
+                "spacing": "Along display walls",
+                "type": "13A BS 1363, 2-gang",
+                "circuit_rating": "20A ring circuit",
+                "max_sockets_per_circuit": 8,
+                "special_requirements": ["POS counter sockets", "Display lighting points"]
+            },
+            "Restaurant": {
+                "density": "1 double socket per table area",
+                "spacing": "At service areas",
+                "type": "13A BS 1363, 2-gang",
+                "circuit_rating": "20A ring circuit",
+                "max_sockets_per_circuit": 8,
+                "special_requirements": ["Kitchen equipment sockets", "POS system points"]
+            },
+            "Kitchen (Commercial)": {
+                "density": "As per equipment schedule",
+                "spacing": "Individual circuits for equipment",
+                "type": "13A / 32A / Industrial sockets",
+                "circuit_rating": "Individual circuits",
+                "max_sockets_per_circuit": 1,
+                "special_requirements": ["IP66 rating near water", "RCBO per circuit", "Equipment isolation"]
+            },
+            "Warehouse": {
+                "density": "1 socket per 50m²",
+                "spacing": "Along columns and walls",
+                "type": "13A BS 1363, 1-gang heavy duty",
+                "circuit_rating": "20A radial",
+                "max_sockets_per_circuit": 4,
+                "special_requirements": ["Impact resistant", "High level sockets for MHE charging"]
+            },
+            "Classroom": {
+                "density": "2 double sockets per wall",
+                "spacing": "Front and back of room",
+                "type": "13A BS 1363, 2-gang",
+                "circuit_rating": "20A ring circuit",
+                "max_sockets_per_circuit": 8,
+                "special_requirements": ["Teacher's desk sockets", "AV equipment points"]
+            },
+            "Toilet / Bathroom": {
+                "density": "1 shaver socket per 2 toilets",
+                "spacing": "Near mirror area",
+                "type": "Shaver socket (BS 4573) / 13A",
+                "circuit_rating": "20A radial with RCD",
+                "max_sockets_per_circuit": 3,
+                "special_requirements": ["RCD protection", "IP44 rating", "Isolation transformer for shavers"]
+            },
+            "Hawker Centre / Market": {
+                "density": "1 socket per stall (minimum 2)",
+                "spacing": "At each stall location",
+                "type": "13A BS 1363, IP66 weatherproof",
+                "circuit_rating": "20A radial per stall",
+                "max_sockets_per_circuit": 2,
+                "special_requirements": ["Weatherproof covers", "Individual RCBO", "High temperature rating"]
+            }
+        }
+        
+        # Isolator requirements by room/equipment type
+        self.isolator_requirements = {
+            "General Lighting": {
+                "required": True,
+                "type": "Switch (local)",
+                "location": "At entrance of room",
+                "purpose": "Local isolation for maintenance"
+            },
+            "Socket Outlets": {
+                "required": True,
+                "type": "MCB in DB",
+                "location": "Distribution board",
+                "purpose": "Circuit protection and isolation"
+            },
+            "Air Conditioner (Split)": {
+                "required": True,
+                "type": "45A Isolator with switch",
+                "location": "Near unit, accessible",
+                "purpose": "Local isolation for servicing"
+            },
+            "Air Conditioner (Cassette)": {
+                "required": True,
+                "type": "45A Isolator with switch",
+                "location": "Near controller, accessible",
+                "purpose": "Local isolation for servicing"
+            },
+            "Kitchen Equipment": {
+                "required": True,
+                "type": "32A/63A Isolator with switch",
+                "location": "Adjacent to equipment",
+                "purpose": "Emergency isolation"
+            },
+            "Water Heater": {
+                "required": True,
+                "type": "20A Double pole isolator",
+                "location": "Adjacent to heater",
+                "purpose": "Local isolation for safety"
+            },
+            "Pump / Motor": {
+                "required": True,
+                "type": "Local isolator with lockable handle",
+                "location": "Near pump, visible",
+                "purpose": "Lockout/tagout for maintenance"
+            },
+            "Generator": {
+                "required": True,
+                "type": "ACB / MCCB with isolation",
+                "location": "At generator panel",
+                "purpose": "Complete isolation"
+            },
+            "Switchboard": {
+                "required": True,
+                "type": "Main breaker",
+                "location": "At switchboard",
+                "purpose": "Main isolation"
+            },
+            "Fan (Ceiling)": {
+                "required": False,
+                "type": "Regulator/switch only",
+                "location": "Wall mounted",
+                "purpose": "Speed control"
+            },
+            "Fan (Industrial)": {
+                "required": True,
+                "type": "32A Isolator with switch",
+                "location": "Near fan, accessible",
+                "purpose": "Maintenance isolation"
+            },
+            "Stall (Hawker Centre)": {
+                "required": True,
+                "type": "63A Isolator with switch, lockable",
+                "location": "At each stall, accessible",
+                "purpose": "Complete stall isolation"
+            }
+        }
+        
+        # Fan selection database (for non-AC areas)
+        self.fan_database = {
+            "Ceiling Fan (Residential)": {
+                "suitable_for": ["Office", "Classroom", "Restaurant", "Shop"],
+                "blade_diameter": ["48\" (1200mm)", "56\" (1400mm)"],
+                "coverage_area_m2": 20,
+                "airflow_cfm": 6000,
+                "power_watts": 75,
+                "mounting_height": "2.5-3m",
+                "noise_level": "Low",
+                "speed_control": "Multi-speed regulator"
+            },
+            "Ceiling Fan (Commercial)": {
+                "suitable_for": ["Hawker Centre", "Market", "Gym", "Warehouse"],
+                "blade_diameter": ["56\" (1400mm)", "60\" (1500mm)"],
+                "coverage_area_m2": 30,
+                "airflow_cfm": 10000,
+                "power_watts": 120,
+                "mounting_height": "3-4m",
+                "noise_level": "Medium",
+                "speed_control": "Remote / 5-speed"
+            },
+            "High Volume Low Speed (HVLS)": {
+                "suitable_for": ["Hawker Centre", "Warehouse", "Factory", "Sports Hall"],
+                "blade_diameter": ["8ft (2.4m)", "10ft (3.0m)", "12ft (3.7m)", "16ft (4.9m)", "20ft (6.1m)"],
+                "coverage_area_m2": {
+                    "8ft": 150,
+                    "10ft": 250,
+                    "12ft": 350,
+                    "16ft": 600,
+                    "20ft": 900
+                },
+                "airflow_cfm": {
+                    "8ft": 30000,
+                    "10ft": 45000,
+                    "12ft": 60000,
+                    "16ft": 90000,
+                    "20ft": 120000
+                },
+                "power_watts": {
+                    "8ft": 300,
+                    "10ft": 500,
+                    "12ft": 800,
+                    "16ft": 1200,
+                    "20ft": 1500
+                },
+                "mounting_height": "Minimum 4m, ideal 6-10m",
+                "noise_level": "Very Low",
+                "speed_control": "VFD (Variable Frequency Drive)"
+            },
+            "Wall Mounted Fan (Oscillating)": {
+                "suitable_for": ["Workshop", "Kitchen", "Store", "Loading Bay"],
+                "blade_diameter": ["18\" (450mm)", "24\" (600mm)", "30\" (750mm)"],
+                "coverage_area_m2": {
+                    "18\"": 25,
+                    "24\"": 40,
+                    "30\"": 60
+                },
+                "airflow_cfm": {
+                    "18\"": 4000,
+                    "24\"": 7000,
+                    "30\"": 10000
+                },
+                "power_watts": {
+                    "18\"": 120,
+                    "24\"": 200,
+                    "30\"": 300
+                },
+                "mounting_height": "2.5-3m",
+                "noise_level": "Medium",
+                "speed_control": "3-speed pull cord/switch"
+            },
+            "Pedestal Fan": {
+                "suitable_for": ["Temporary areas", "Store", "Event"],
+                "blade_diameter": ["16\" (400mm)", "18\" (450mm)", "20\" (500mm)"],
+                "coverage_area_m2": 20,
+                "airflow_cfm": 3000,
+                "power_watts": 80,
+                "mounting_height": "Floor standing",
+                "noise_level": "Medium",
+                "speed_control": "3-speed"
+            },
+            "Exhaust Fan (Wall/Ceiling)": {
+                "suitable_for": ["Toilet", "Kitchen", "Store Room", "Plant Room"],
+                "blade_diameter": ["6\" (150mm)", "8\" (200mm)", "10\" (250mm)", "12\" (300mm)"],
+                "airflow_cfm": {
+                    "6\"": 150,
+                    "8\"": 300,
+                    "10\"": 500,
+                    "12\"": 800
+                },
+                "power_watts": {
+                    "6\"": 20,
+                    "8\"": 35,
+                    "10\"": 50,
+                    "12\"": 80
+                },
+                "sound_level_db": 45,
+                "purpose": "Ventilation",
+                "installation": "Through wall/ceiling"
+            }
+        }
+        
+        # Ventilation requirements (air changes per hour - ACH)
+        self.ventilation_requirements = {
+            "Office": {"ac_ach": 6, "non_ac_ach": 8, "notes": "Fresh air requirement 10 L/s/person"},
+            "Meeting Room": {"ac_ach": 8, "non_ac_ach": 12, "notes": "Higher occupancy, smoking room separate"},
+            "Corridor": {"ac_ach": 2, "non_ac_ach": 4, "notes": "Natural ventilation if possible"},
+            "Staircase": {"ac_ach": 2, "non_ac_ach": 4, "notes": "Pressurization for fire safety"},
+            "Car Park": {"ac_ach": 0, "non_ac_ach": 6, "notes": "CO monitoring required, jet fans"},
+            "Restaurant": {"ac_ach": 8, "non_ac_ach": 15, "notes": "Kitchen separate exhaust"},
+            "Kitchen": {"ac_ach": 15, "non_ac_ach": 30, "notes": "Kitchen hood required"},
+            "Toilet": {"ac_ach": 10, "non_ac_ach": 15, "notes": "Mechanical exhaust mandatory"},
+            "Warehouse": {"ac_ach": 2, "non_ac_ach": 4, "notes": "Ventilation for heat removal"},
+            "Hawker Centre": {"ac_ach": 0, "non_ac_ach": 12, "notes": "High ceiling, mechanical extraction"},
+            "Market": {"ac_ach": 0, "non_ac_ach": 10, "notes": "Odour control, ventilation"},
+            "Plant Room": {"ac_ach": 10, "non_ac_ach": 15, "notes": "Heat removal for equipment"},
+            "Generator Room": {"ac_ach": 20, "non_ac_ach": 30, "notes": "Combustion air + cooling"},
+            "Battery Room": {"ac_ach": 12, "non_ac_ach": 15, "notes": "Hydrogen gas extraction"},
+            "Electrical Switchroom": {"ac_ach": 6, "non_ac_ach": 8, "notes": "Temperature control <35°C"}
+        }
+        
+        # Cable tray fill factors
+        self.tray_fill_factors = {
+            "perforated": 0.4,
+            "ladder": 0.4,
+            "solid": 0.3,
+            "wire_mesh": 0.35
+        }
+        
+        # Standard tray sizes
+        self.standard_tray_sizes = [50, 100, 150, 200, 300, 400, 450, 500, 600, 750, 900]
         
         # Motor starting multipliers
         self.motor_starting_multipliers = {
@@ -178,245 +523,409 @@ class SGProEngine:
             "Water Pump": 4.0
         }
         
-        # Lightning protection standards (Based on SS 555 / IEC 62305)
+        # Lightning protection standards
         self.lightning_protection_levels = {
-            "Level I": {"protection_angle": 20, "mesh_size": 5, "rolling_sphere": 20, "risk_level": "Very High (e.g., explosives)"},
-            "Level II": {"protection_angle": 25, "mesh_size": 10, "rolling_sphere": 30, "risk_level": "High (e.g., hospitals, tall buildings)"},
-            "Level III": {"protection_angle": 35, "mesh_size": 15, "rolling_sphere": 45, "risk_level": "Normal (e.g., commercial buildings)"},
-            "Level IV": {"protection_angle": 45, "mesh_size": 20, "rolling_sphere": 60, "risk_level": "Low (e.g., temporary structures)"}
+            "Level I": {"protection_angle": 20, "mesh_size": 5, "rolling_sphere": 20, "risk_level": "Very High"},
+            "Level II": {"protection_angle": 25, "mesh_size": 10, "rolling_sphere": 30, "risk_level": "High"},
+            "Level III": {"protection_angle": 35, "mesh_size": 15, "rolling_sphere": 45, "risk_level": "Normal"},
+            "Level IV": {"protection_angle": 45, "mesh_size": 20, "rolling_sphere": 60, "risk_level": "Low"}
         }
         
-        # Air terminal spacing based on protection level and height
+        # Air terminal spacing
         self.air_terminal_spacing = {
             "Level I": {"low": 5, "medium": 4, "high": 3},
             "Level II": {"low": 8, "medium": 6, "high": 4},
             "Level III": {"low": 10, "medium": 8, "high": 5},
             "Level IV": {"low": 12, "medium": 10, "high": 6}
         }
-        
-        # Maintenance schedules (months)
-        self.maintenance_schedule = {
-            "daily": ["Generator visual check", "Battery charger status", "Fuel level", "Alarm status"],
-            "weekly": ["Generator run test (30 mins)", "Battery voltage check", "Coolant level", "Oil level"],
-            "monthly": ["Load bank test", "Earth resistance measurement", "Emergency lighting test", "Fire pump test"],
-            "quarterly": ["Cable thermal imaging", "Connection torque check", "Insulation resistance test", "Protection relay test"],
-            "annually": ["Full load generator test", "Battery replacement", "Oil and filter change", "Professional inspection"]
-        }
-        
-        # Common issues and solutions
-        self.troubleshooting_guide = {
-            "Generator fails to start": ["Check battery voltage", "Check fuel level", "Check control fuse", "Check emergency stop"],
-            "Voltage drop issues": ["Check cable sizing", "Check connections", "Check load balance", "Consider cable upgrade"],
-            "Earth fault trip": ["Check insulation resistance", "Check for moisture", "Check RCCB/ELR", "Identify faulty circuit"],
-            "Overheating cables": ["Check load current", "Check ventilation", "Check connections", "Derate or upgrade cable"]
-        }
 
-    # ==================== EDUCATIONAL NOTES FOR INSTALLERS ====================
-    def get_installer_notes(self, topic):
-        """Provide educational notes for installers and junior engineers"""
-        notes = {
-            "cable_sizing": """
-            **📚 CABLE SIZING FOR INSTALLERS (SS 638):**
-            
-            **Step-by-Step Guide:**
-            1. **Calculate Design Current (Ib):** 
-               - Formula: Ib = Power (kW) × 1000 / (√3 × 400V × Power Factor)
-               - Example: 100kW motor at 0.85pf = 100×1000/(1.732×400×0.85) = 170A
-            
-            2. **Select Cable Size Based on Current:**
-               - Check Table 4E4A in SS 638 for Cu/XLPE cables
-               - Cable must have Iz ≥ Ib × 1.25 (for continuous loads)
-               - Example: For 170A, need cable with Iz ≥ 212.5A → 70mm² (Iz=255A)
-            
-            3. **Check Voltage Drop:**
-               - Maximum allowed: 4% for main runs, 6.5% for final circuits
-               - Voltage drop increases with length and current
-               - If voltage drop > limit, go up one cable size
-            
-            4. **Check Cable Installation Method:**
-               - Method E (in free air) vs Method C (in conduit)
-               - Derating factors for grouping, ambient temperature
-               - Use correction factors from SS 638 tables
-            
-            **⚠️ Common Installation Mistakes:**
-            - Using cable based only on current, ignoring voltage drop
-            - Not applying derating factors for grouped cables
-            - Incorrect cable gland selection for armor type
-            - Poor termination causing hot spots
-            """,
-            
-            "cable_containment": """
-            **📚 CABLE CONTAINMENT SIZING (SS 638 / IEC 61537):**
-            
-            **Cable Tray Types:**
-            1. **Perforated Tray:** Good ventilation, max fill 40%
-            2. **Ladder Tray:** Best for large cables, max fill 40%
-            3. **Solid Tray:** Dust protection, max fill 30%
-            4. **Wire Mesh:** Flexible for small cables, max fill 35%
-            
-            **Sizing Formula:**
-            ```
-            Required Width = (Sum of cable cross-sectional areas) / (Tray Depth × Fill Factor)
-            ```
-            
-            **Step-by-Step Sizing:**
-            1. Calculate cross-sectional area of each cable (π × (diameter/2)²)
-            2. Sum all cable areas
-            3. Divide by fill factor (0.4 for perforated)
-            4. Divide by tray depth (standard 50mm, 75mm, 100mm)
-            5. Select next standard tray size
-            
-            **Example:**
-            - 5 × 50mm² cables (27mm diameter each)
-            - Area per cable = π × (13.5)² = 573 mm²
-            - Total area = 5 × 573 = 2865 mm²
-            - For 50mm deep tray at 40% fill: 2865 / (50 × 0.4) = 143mm width
-            - Select 150mm wide tray
-            
-            **Installation Rules:**
-            - Maintain spacing between trays: 300mm minimum
-            - Support spacing: 1.5m for horizontal, 2m for vertical
-            - 25% spare capacity for future cables
-            - Segregate power, control, and data cables
-            - Use fire stopping at wall/floor penetrations
-            """,
-            
-            "earth_system": """
-            **📚 EARTHING SYSTEM FOR INSTALLERS (SS 638):**
-            
-            **Purpose of Earthing:**
-            - Protect against electric shock
-            - Provide path for fault current
-            - Stabilize voltage during transients
-            
-            **Earth Pit Installation:**
-            1. **Location:** Outside building, accessible for testing
-            2. **Depth:** Minimum 3 meters
-            3. **Electrode:** 20mm diameter copper-clad steel rod
-            4. **Backfill:** Bentonite mix (improves conductivity)
-            5. **Cover:** Heavy-duty cast iron with lock
-            
-            **Earth Resistance Targets:**
-            - Combined system: < 1Ω
-            - Generator neutral: < 1Ω
-            - Lightning protection: < 10Ω
-            - Fuel tank: < 10Ω
-            
-            **Test Link Installation:**
-            - Install removable link at accessible location
-            - Allows isolation for earth resistance testing
-            - Must be clearly labeled
-            - Rated for fault current
-            
-            **Bonding Requirements:**
-            - Bond all metal enclosures, cable trays, pipework
-            - Main equipotential bonding: 25mm² minimum
-            - Supplementary bonding: 4mm² minimum
-            - Bonding at building entry for all services
-            """,
-            
-            "lightning_protection": """
-            **📚 LIGHTNING PROTECTION FOR INSTALLERS (SS 555):**
-            
-            **Components:**
-            1. **Air Terminals (Lightning Rods):** Capture lightning strikes
-            2. **Down Conductors:** Carry current to earth
-            3. **Earth Terminations:** Dissipate current safely
-            4. **Test Joints:** Allow testing of continuity
-            
-            **Installation Rules:**
-            
-            **Air Terminals:**
-            - Height: Minimum 0.5m above roof surface
-            - Spacing: Based on protection level (typically 5-15m)
-            - Material: Copper or aluminum (16mm diameter min)
-            - Location: Along perimeter, ridges, high points
-            
-            **Down Conductors:**
-            - Spacing: Maximum 20m along perimeter
-            - Routing: Straightest path to earth
-            - Protection: In PVC conduit up to 2m height
-            - Bonding: Connect to main earth bar at base
-            
-            **Test Joints:**
-            - One per down conductor
-            - Located 1.5m above ground
-            - Weatherproof enclosure
-            - Bolted link type for disconnection
-            
-            **Common Mistakes:**
-            - Sharp bends in conductors (avoid < 90°)
-            - Poor bonding of metal objects
-            - Insufficient separation from data cables
-            - Missing test joints
-            """,
-            
-            "generator_installation": """
-            **📚 GENERATOR INSTALLATION FOR INSTALLERS:**
-            
-            **Location Requirements:**
-            - Ventilation: Adequate air intake and exhaust
-            - Access: Minimum 1m clearance around unit
-            - Fuel: Day tank (8hr min), main tank location
-            - Acoustic: Sound attenuation for neighbors
-            
-            **Electrical Connections:**
-            1. **Cable Sizing:** Based on generator full load current
-            2. **Voltage Drop:** Keep < 3% at full load
-            3. **ATS Installation:** Automatic transfer switch
-            4. **Earth Connection:** Separate earth pits
-            
-            **Commissioning Tests:**
-            - No-load run (30 minutes)
-            - Load bank test (25%, 50%, 75%, 100%)
-            - Transfer test (mains to generator)
-            - Protection tests (earth fault, overcurrent)
-            
-            **Safety Features:**
-            - Emergency stop button (external)
-            - Battery charger with float mode
-            - Fuel leak detection
-            - Fire suppression system
-            - Exhaust extraction
-            """,
-            
-            "switchroom": """
-            **📚 SWITCHROOM INSTALLATION GUIDE:**
-            
-            **Clearance Requirements (SS 638):**
-            - Front: 1500mm for ACB withdrawal
-            - Rear: 800mm for termination access
-            - Sides: 800mm for ventilation
-            - Top: 500mm for busbar access
-            
-            **Ventilation:**
-            - Temperature: Maintain below 35°C
-            - Air changes: Minimum 6 per hour
-            - Mechanical ventilation or AC
-            - Positive pressure to prevent dust
-            
-            **Lighting:**
-            - Minimum 300 lux at floor level
-            - Emergency lighting on generator
-            - Local switches at entrance
-            
-            **Safety Equipment:**
-            - Rubber matting in front of switchboards
-            - Fire extinguisher (CO2 type)
-            - "DANGER - HIGH VOLTAGE" signs
-            - Single line diagram on wall
-            - Emergency lighting
-            
-            **Cable Entry:**
-            - Gland plates at bottom/top
-            - Fire stopping at penetrations
-            - Cable supports within 1m of entry
-            - Segregation of different voltages
-            """
-        }
-        return notes.get(topic, "No notes available for this topic")
+    # ==================== ROOM DESIGN FUNCTIONS ====================
     
-    # ==================== TECHNICAL CALCULATIONS ====================
+    def calculate_lighting_design(self, room_type, length, width, height):
+        """
+        Calculate complete lighting design for a room
+        """
+        if room_type not in self.lighting_standards:
+            return None
+        
+        area = length * width
+        std = self.lighting_standards[room_type]
+        
+        # Calculate number of fittings using Lumen method
+        recommended_lux = std["recommended_lux"]
+        
+        # Typical utilization factor (0.6-0.8) and maintenance factor (0.8)
+        utilization_factor = 0.7
+        maintenance_factor = 0.8
+        
+        # Total lumens required
+        total_lumens = (area * recommended_lux) / (utilization_factor * maintenance_factor)
+        
+        # Number of fittings
+        lumens_per_fitting = std["lumens_per_fitting"]
+        num_fittings_raw = total_lumens / lumens_per_fitting
+        
+        # Round up to nearest integer and ensure even number for layout
+        num_fittings = math.ceil(num_fittings_raw)
+        if num_fittings % 2 != 0:
+            num_fittings += 1
+        
+        # Calculate actual lux achieved
+        actual_lumens = num_fittings * lumens_per_fitting
+        actual_lux = (actual_lumens * utilization_factor * maintenance_factor) / area
+        
+        # Determine layout grid
+        # Aim for spacing roughly 1.5x mounting height
+        max_spacing = height * 1.5
+        
+        # Calculate fittings along length and width
+        fittings_length = math.ceil(math.sqrt(num_fittings * (length / width)))
+        fittings_width = math.ceil(num_fittings / fittings_length)
+        
+        # Adjust to get correct total
+        while fittings_length * fittings_width < num_fittings:
+            fittings_width += 1
+        
+        actual_fittings = fittings_length * fittings_width
+        spacing_length = length / (fittings_length + 1)
+        spacing_width = width / (fittings_width + 1)
+        
+        # Calculate load
+        total_watts = num_fittings * std["watt_per_fitting"]
+        watts_per_m2 = total_watts / area
+        
+        # Determine switch layout
+        num_switches = max(1, math.ceil(fittings_length / 2))
+        
+        # Emergency lighting requirement
+        emergency_required = std.get("emergency_required", "10%")
+        if "100%" in emergency_required:
+            emergency_fittings = num_fittings
+        else:
+            emergency_fittings = math.ceil(num_fittings * 0.1)
+        
+        return {
+            "area": area,
+            "recommended_lux": recommended_lux,
+            "actual_lux": actual_lux,
+            "fitting_type": std["fitting_type"],
+            "lumens_per_fitting": lumens_per_fitting,
+            "watt_per_fitting": std["watt_per_fitting"],
+            "num_fittings": num_fittings,
+            "actual_fittings": actual_fittings,
+            "fittings_length": fittings_length,
+            "fittings_width": fittings_width,
+            "spacing_length": spacing_length,
+            "spacing_width": spacing_width,
+            "total_watts": total_watts,
+            "watts_per_m2": watts_per_m2,
+            "num_switches": num_switches,
+            "emergency_fittings": emergency_fittings,
+            "mounting_height": std["mounting_height"],
+            "color_temp": std["color_temp"],
+            "cri": std["cri_requirement"],
+            "ip_rating": std.get("ip_rating", "IP20")
+        }
+    
+    def calculate_socket_outlets(self, room_type, length, width):
+        """
+        Calculate number and placement of socket outlets
+        """
+        if room_type not in self.socket_outlet_standards:
+            return None
+        
+        area = length * width
+        perimeter = 2 * (length + width)
+        std = self.socket_outlet_standards[room_type]
+        
+        # Calculate number based on density description
+        if "per" in std["density"]:
+            # Parse density like "1 per 5-8 m²"
+            parts = std["density"].split("per")
+            if len(parts) > 1:
+                range_str = parts[1].strip().replace("m²", "").replace("²", "").strip()
+                if "-" in range_str:
+                    low, high = map(float, range_str.split("-"))
+                    avg_density = (low + high) / 2
+                else:
+                    avg_density = float(range_str)
+                
+                # Number based on area
+                num_sockets_raw = area / avg_density
+                num_sockets = math.ceil(num_sockets_raw)
+            else:
+                num_sockets = 4  # Default
+        else:
+            num_sockets = 6  # Default
+        
+        # Calculate circuits required
+        max_per_circuit = std["max_sockets_per_circuit"]
+        num_circuits = math.ceil(num_sockets / max_per_circuit)
+        
+        # Calculate load
+        load_per_socket = 300  # Watts (typical for general use)
+        if "Industrial" in std["type"]:
+            load_per_socket = 1000
+        
+        total_load = num_sockets * load_per_socket
+        current_per_phase = total_load / (230 * 3)  # Assuming balanced across 3 phases
+        
+        # Socket placement recommendations
+        if "spacing" in std:
+            spacing_desc = std["spacing"]
+            if "every" in spacing_desc.lower():
+                # Parse spacing like "every 2.5-3m"
+                import re
+                numbers = re.findall(r"[\d.]+", spacing_desc)
+                if numbers:
+                    spacing = float(numbers[0])
+                    sockets_per_wall = math.ceil(length / spacing) + math.ceil(width / spacing)
+                    num_sockets = max(num_sockets, sockets_per_wall)
+        
+        return {
+            "num_sockets": num_sockets,
+            "socket_type": std["type"],
+            "circuit_type": std["circuit_rating"],
+            "num_circuits": num_circuits,
+            "max_sockets_per_circuit": max_per_circuit,
+            "total_load_watts": total_load,
+            "total_load_kw": total_load / 1000,
+            "current_per_phase": current_per_phase,
+            "special_requirements": std["special_requirements"],
+            "placement": f"Along walls at {spacing_desc if 'spacing' in std else 'standard spacing'}"
+        }
+    
+    def get_isolator_requirements(self, room_type, equipment_list):
+        """
+        Get isolator requirements based on room type and equipment
+        """
+        isolators = []
+        
+        # General lighting isolator
+        if "lighting" in equipment_list or "all" in equipment_list:
+            isolators.append({
+                "equipment": "General Lighting",
+                "required": True,
+                "type": "Light switch (local)",
+                "location": "At room entrance",
+                "details": self.isolator_requirements["General Lighting"]
+            })
+        
+        # Socket outlet circuit isolator
+        if "sockets" in equipment_list or "all" in equipment_list:
+            isolators.append({
+                "equipment": "Socket Outlets",
+                "required": True,
+                "type": "MCB in DB",
+                "location": "Distribution board",
+                "details": self.isolator_requirements["Socket Outlets"]
+            })
+        
+        # Room-specific equipment
+        room_isolators = {
+            "Kitchen (Commercial)": ["Kitchen Equipment"],
+            "Restaurant": ["Kitchen Equipment"],
+            "Toilet / Bathroom": ["Water Heater"],
+            "Plant Room": ["Pump / Motor"],
+            "Generator Room": ["Generator"],
+            "Electrical Switchroom": ["Switchboard"],
+            "Hawker Centre": ["Stall (Hawker Centre)"],
+            "Market": ["Stall (Hawker Centre)"]
+        }
+        
+        if room_type in room_isolators:
+            for equip in room_isolators[room_type]:
+                if equip in self.isolator_requirements:
+                    isolators.append({
+                        "equipment": equip,
+                        "required": True,
+                        "type": self.isolator_requirements[equip]["type"],
+                        "location": self.isolator_requirements[equip]["location"],
+                        "details": self.isolator_requirements[equip]
+                    })
+        
+        return isolators
+    
+    def calculate_fan_requirements(self, room_type, length, width, height, is_aircond=True):
+        """
+        Calculate fan requirements for non-aircond areas
+        """
+        area = length * width
+        volume = area * height
+        
+        # Get ventilation requirements
+        vent_req = self.ventilation_requirements.get(room_type, 
+                    self.ventilation_requirements.get("Office", {"ac_ach": 6, "non_ac_ach": 8, "notes": ""}))
+        
+        if is_aircond:
+            # For aircond areas, still need air movement for circulation
+            ach_required = vent_req["ac_ach"]
+            primary_purpose = "Air circulation"
+        else:
+            # For non-aircond, need ventilation for comfort
+            ach_required = vent_req["non_ac_ach"]
+            primary_purpose = "Ventilation and cooling"
+        
+        # Required airflow in CFM (Cubic Feet per Minute)
+        # 1 ACH = Volume (m³) * 0.588 / 60 CFM (approx)
+        required_cfm = volume * ach_required * 0.588
+        
+        # Select fan type based on room characteristics
+        fan_recommendations = []
+        
+        # Check if HVLS fan is suitable (high ceiling, large area)
+        if height >= 4 and area >= 150:
+            # HVLS fan
+            hvls_sizes = ["8ft", "10ft", "12ft", "16ft", "20ft"]
+            for size in hvls_sizes:
+                coverage = self.fan_database["High Volume Low Speed (HVLS)"]["coverage_area_m2"][size]
+                if coverage >= area:
+                    cfm = self.fan_database["High Volume Low Speed (HVLS)"]["airflow_cfm"][size]
+                    power = self.fan_database["High Volume Low Speed (HVLS)"]["power_watts"][size]
+                    num_fans = math.ceil(area / coverage)
+                    fan_recommendations.append({
+                        "type": "High Volume Low Speed (HVLS)",
+                        "size": size,
+                        "coverage_per_fan": coverage,
+                        "num_fans": num_fans,
+                        "cfm_per_fan": cfm,
+                        "total_cfm": cfm * num_fans,
+                        "power_watts": power * num_fans,
+                        "mounting_height": self.fan_database["High Volume Low Speed (HVLS)"]["mounting_height"],
+                        "noise_level": self.fan_database["High Volume Low Speed (HVLS)"]["noise_level"],
+                        "speed_control": self.fan_database["High Volume Low Speed (HVLS)"]["speed_control"]
+                    })
+                    break
+        
+        # Check if commercial ceiling fans suitable
+        if height <= 4 and area <= 500:
+            fan_type = "Ceiling Fan (Commercial)" if area > 100 else "Ceiling Fan (Residential)"
+            fan_data = self.fan_database[fan_type]
+            coverage = fan_data["coverage_area_m2"]
+            num_fans = math.ceil(area / coverage)
+            
+            # Select blade size based on room size
+            if area <= 50:
+                blade_size = fan_data["blade_diameter"][0]  # Smaller
+            elif area <= 100:
+                blade_size = fan_data["blade_diameter"][1] if len(fan_data["blade_diameter"]) > 1 else fan_data["blade_diameter"][0]
+            else:
+                blade_size = fan_data["blade_diameter"][-1]  # Larger
+            
+            fan_recommendations.append({
+                "type": fan_type,
+                "blade_size": blade_size,
+                "coverage_per_fan": coverage,
+                "num_fans": num_fans,
+                "cfm_per_fan": fan_data["airflow_cfm"],
+                "total_cfm": fan_data["airflow_cfm"] * num_fans,
+                "power_watts": fan_data["power_watts"] * num_fans,
+                "mounting_height": fan_data["mounting_height"],
+                "noise_level": fan_data["noise_level"],
+                "speed_control": fan_data["speed_control"]
+            })
+        
+        # For kitchens, workshops, add wall mounted fans
+        if "Kitchen" in room_type or "Workshop" in room_type:
+            fan_type = "Wall Mounted Fan (Oscillating)"
+            fan_data = self.fan_database[fan_type]
+            
+            # Select size based on area
+            if area <= 50:
+                blade_size = "18\" (450mm)"
+                coverage = fan_data["coverage_area_m2"]["18\""]
+                cfm = fan_data["airflow_cfm"]["18\""]
+                power = fan_data["power_watts"]["18\""]
+            elif area <= 100:
+                blade_size = "24\" (600mm)"
+                coverage = fan_data["coverage_area_m2"]["24\""]
+                cfm = fan_data["airflow_cfm"]["24\""]
+                power = fan_data["power_watts"]["24\""]
+            else:
+                blade_size = "30\" (750mm)"
+                coverage = fan_data["coverage_area_m2"]["30\""]
+                cfm = fan_data["airflow_cfm"]["30\""]
+                power = fan_data["power_watts"]["30\""]
+            
+            num_fans = math.ceil(area / coverage)
+            fan_recommendations.append({
+                "type": fan_type,
+                "blade_size": blade_size,
+                "coverage_per_fan": coverage,
+                "num_fans": num_fans,
+                "cfm_per_fan": cfm,
+                "total_cfm": cfm * num_fans,
+                "power_watts": power * num_fans,
+                "mounting_height": fan_data["mounting_height"],
+                "noise_level": fan_data["noise_level"],
+                "speed_control": fan_data["speed_control"],
+                "note": "For targeted air movement"
+            })
+        
+        # Add exhaust fans for rooms requiring ventilation
+        if "Toilet" in room_type or "Kitchen" in room_type or "Plant Room" in room_type or "Battery" in room_type:
+            fan_type = "Exhaust Fan (Wall/Ceiling)"
+            fan_data = self.fan_database[fan_type]
+            
+            # Calculate required exhaust CFM based on ACH
+            required_exhaust_cfm = volume * vent_req["non_ac_ach"] * 0.588
+            
+            # Select size
+            if required_exhaust_cfm <= 200:
+                blade_size = "8\" (200mm)"
+                cfm = fan_data["airflow_cfm"]["8\""]
+                power = fan_data["power_watts"]["8\""]
+            elif required_exhaust_cfm <= 400:
+                blade_size = "10\" (250mm)"
+                cfm = fan_data["airflow_cfm"]["10\""]
+                power = fan_data["power_watts"]["10\""]
+            elif required_exhaust_cfm <= 700:
+                blade_size = "12\" (300mm)"
+                cfm = fan_data["airflow_cfm"]["12\""]
+                power = fan_data["power_watts"]["12\""]
+            else:
+                blade_size = "Multiple 12\" units"
+                num_exhaust = math.ceil(required_exhaust_cfm / 800)
+                cfm = 800
+                power = 80 * num_exhaust
+            
+            if blade_size == "Multiple 12\" units":
+                fan_recommendations.append({
+                    "type": fan_type,
+                    "blade_size": blade_size,
+                    "num_fans": num_exhaust,
+                    "total_cfm": cfm * num_exhaust,
+                    "power_watts": power,
+                    "purpose": fan_data["purpose"],
+                    "installation": fan_data["installation"],
+                    "note": f"Required for {ach_required} air changes per hour"
+                })
+            else:
+                fan_recommendations.append({
+                    "type": fan_type,
+                    "blade_size": blade_size,
+                    "num_fans": 1,
+                    "cfm_per_fan": cfm,
+                    "total_cfm": cfm,
+                    "power_watts": power,
+                    "purpose": fan_data["purpose"],
+                    "installation": fan_data["installation"],
+                    "note": f"Required for {ach_required} air changes per hour"
+                })
+        
+        return {
+            "area": area,
+            "volume": volume,
+            "is_aircond": is_aircond,
+            "ach_required": ach_required,
+            "required_cfm": required_cfm,
+            "primary_purpose": primary_purpose,
+            "fan_recommendations": fan_recommendations,
+            "total_power_watts": sum(f["power_watts"] for f in fan_recommendations) if fan_recommendations else 0,
+            "notes": vent_req["notes"]
+        }
+    
+    # ==================== EXISTING FUNCTIONS ====================
     
     def get_at_af(self, ib):
         at = next((x for x in self.standard_trips if x >= ib), 4000)
@@ -424,32 +933,21 @@ class SGProEngine:
         return at, af
     
     def calculate_voltage_drop(self, cable_size, current, length, pf=0.85):
-        """
-        Calculate voltage drop for given cable size and length
-        Returns voltage drop in volts and percentage
-        """
         if cable_size not in self.cable_impedance:
             return None, None
         
         impedance = self.cable_impedance[cable_size]
-        
-        # Voltage drop formula for 3-phase: Vd = √3 × I × L × (R cosφ + X sinφ) / 1000
         sin_phi = math.sqrt(1 - pf**2)
         v_drop_per_km = math.sqrt(3) * current * (impedance["r"] * pf + impedance["x"] * sin_phi)
         v_drop = v_drop_per_km * length / 1000
-        
-        v_drop_percent = (v_drop / 400) * 100  # Assuming 400V system
+        v_drop_percent = (v_drop / 400) * 100
         
         return v_drop, v_drop_percent
     
     def select_cable_with_vd(self, ib, length, pf=0.85, max_vd_percent=4):
-        """
-        Select cable size considering both current capacity and voltage drop
-        """
-        # First find cables that meet current capacity
         suitable_cables = []
         for size, iz in self.cable_db.items():
-            if iz >= ib * 1.25:  # 25% safety margin for continuous load
+            if iz >= ib * 1.25:
                 vd, vd_percent = self.calculate_voltage_drop(size, ib, length, pf)
                 if vd_percent and vd_percent <= max_vd_percent:
                     suitable_cables.append({
@@ -460,10 +958,8 @@ class SGProEngine:
                     })
         
         if suitable_cables:
-            # Return the smallest cable that meets both requirements
             return min(suitable_cables, key=lambda x: x["size"])
         else:
-            # If no cable meets VD requirement, return largest that meets current capacity
             current_suitable = [{"size": s, "iz": iz} for s, iz in self.cable_db.items() if iz >= ib * 1.25]
             if current_suitable:
                 largest = max(current_suitable, key=lambda x: x["size"])
@@ -479,10 +975,6 @@ class SGProEngine:
                 return {"error": "No cable found. Multiple runs required."}
     
     def calculate_cable_tray_size(self, cables, tray_depth=50, tray_type="perforated", spare_capacity=0.25):
-        """
-        Calculate required cable tray size based on cable diameters
-        cables: list of cable sizes in sqmm
-        """
         total_area = 0
         cable_details = []
         
@@ -498,18 +990,11 @@ class SGProEngine:
                     "area": area
                 })
         
-        # Apply spare capacity
         total_area_with_spare = total_area * (1 + spare_capacity)
-        
-        # Calculate required width based on fill factor
         fill_factor = self.tray_fill_factors.get(tray_type, 0.4)
         required_width = total_area_with_spare / (tray_depth * fill_factor)
-        
-        # Select standard tray size
         selected_width = next((w for w in self.standard_tray_sizes if w >= required_width), 
                               self.standard_tray_sizes[-1])
-        
-        # Calculate actual fill percentage
         actual_fill = (total_area / (selected_width * tray_depth)) * 100
         
         return {
@@ -525,127 +1010,40 @@ class SGProEngine:
             "spare_capacity": spare_capacity * 100
         }
     
-    def calculate_room_load(self, room_type, area_m2, quantity=1):
-        """
-        Calculate electrical load for a specific room type
-        """
-        if room_type not in self.room_load_database:
-            return None
-        
-        room = self.room_load_database[room_type]
-        
-        # Calculate individual loads
-        lighting_load = room["lighting_load"] * area_m2 / 1000  # kW
-        socket_load = room["socket_load"] * area_m2 / 1000      # kW
-        equipment_load = room["equipment_load"] * area_m2 / 1000 # kW
-        ac_load = room["ac_load"] * area_m2 / 1000              # kW
-        
-        # Total before diversity
-        total_raw = lighting_load + socket_load + equipment_load + ac_load
-        
-        # Apply diversity factor
-        total_diversified = total_raw * room["diversity_factor"]
-        
-        # Calculate per quantity
-        total_with_quantity = total_diversified * quantity
-        
-        # Calculate current
-        current = (total_with_quantity * 1000) / (math.sqrt(3) * 400 * 0.85)
-        
-        return {
-            "room_type": room_type,
-            "description": room["description"],
-            "area_m2": area_m2,
-            "quantity": quantity,
-            "lighting_load_kw": lighting_load,
-            "socket_load_kw": socket_load,
-            "equipment_load_kw": equipment_load,
-            "ac_load_kw": ac_load,
-            "total_raw_kw": total_raw,
-            "diversity_factor": room["diversity_factor"],
-            "total_diversified_kw": total_diversified,
-            "total_with_quantity_kw": total_with_quantity,
-            "current_a": current,
-            "typical_equipment": room["typical_equipment"],
-            "special_requirements": room.get("special_requirements", [])
-        }
-    
-    def calculate_building_total_load(self, room_loads):
-        """
-        Calculate total building load from multiple rooms
-        """
-        total_lighting = sum(r["lighting_load_kw"] * r["quantity"] for r in room_loads)
-        total_socket = sum(r["socket_load_kw"] * r["quantity"] for r in room_loads)
-        total_equipment = sum(r["equipment_load_kw"] * r["quantity"] for r in room_loads)
-        total_ac = sum(r["ac_load_kw"] * r["quantity"] for r in room_loads)
-        total_diversified = sum(r["total_with_quantity_kw"] for r in room_loads)
-        
-        # Overall building diversity (typically 0.6-0.8)
-        building_diversity = 0.7
-        final_load = total_diversified * building_diversity
-        
-        return {
-            "total_lighting_kw": total_lighting,
-            "total_socket_kw": total_socket,
-            "total_equipment_kw": total_equipment,
-            "total_ac_kw": total_ac,
-            "total_diversified_kw": total_diversified,
-            "building_diversity": building_diversity,
-            "final_load_kw": final_load,
-            "final_current_a": (final_load * 1000) / (math.sqrt(3) * 400 * 0.85)
-        }
-    
     def calculate_generator_size(self, essential_loads, fire_loads, largest_motor_starting_kva):
-        """
-        Calculate required generator size based on running and starting loads
-        """
-        # Total running load (essential + fire loads during fire mode)
         total_running_kva = sum(essential_loads) + sum(fire_loads)
-        
-        # Starting scenario: Running loads + largest motor starting
-        other_running_kva = total_running_kva - largest_motor_starting_kva  # Remove the motor's running load
+        other_running_kva = total_running_kva - largest_motor_starting_kva
         starting_scenario_kva = other_running_kva + largest_motor_starting_kva
-        
-        # Generator size with 20% safety margin
         required_gen_size = max(total_running_kva, starting_scenario_kva) * 1.2
         
-        # Round up to nearest standard generator size (common sizes)
         standard_gen_sizes = [20, 30, 45, 60, 80, 100, 125, 150, 200, 250, 300, 400, 500, 630, 750, 800, 1000, 1250, 1500, 2000]
         recommended_gen = next((x for x in standard_gen_sizes if x >= required_gen_size), required_gen_size)
         
         return required_gen_size, recommended_gen, total_running_kva, starting_scenario_kva
     
     def calculate_earth_pits(self, has_fuel_tank=True, soil_condition="Normal", building_area=0, protection_level="Level III"):
-        """
-        Recommend number of earth pits based on system requirements including lightning protection
-        """
-        # Base earth pits for generator
         earth_pits = {
-            "generator_body": 2,  # Minimum 2 pits for generator body/neutral
+            "generator_body": 2,
             "fuel_tank": 1 if has_fuel_tank else 0,
-            "lightning_protection": 0,  # Will be calculated based on area
+            "lightning_protection": 0,
             "total_recommended": 0
         }
         
-        # Additional pits for poor soil conditions
         if soil_condition == "Poor (High Resistance)":
             earth_pits["generator_body"] = 3
         
-        # Calculate lightning protection earth pits based on building area
         if building_area > 0:
-            # SS 555 / IEC 62305 requirements for lightning protection earthing
             if building_area <= 500:
-                earth_pits["lightning_protection"] = 2  # Small building
+                earth_pits["lightning_protection"] = 2
             elif building_area <= 2000:
-                earth_pits["lightning_protection"] = 4  # Medium building
+                earth_pits["lightning_protection"] = 4
             elif building_area <= 5000:
-                earth_pits["lightning_protection"] = 6  # Large building
+                earth_pits["lightning_protection"] = 6
             else:
-                earth_pits["lightning_protection"] = 8 + math.ceil((building_area - 5000) / 2000)  # Additional pits for very large buildings
+                earth_pits["lightning_protection"] = 8 + math.ceil((building_area - 5000) / 2000)
             
-            # Adjust based on protection level
             level_multiplier = {
-                "Level I": 1.5,   # More stringent requirements
+                "Level I": 1.5,
                 "Level II": 1.2,
                 "Level III": 1.0,
                 "Level IV": 0.8
@@ -657,16 +1055,11 @@ class SGProEngine:
         return earth_pits
     
     def calculate_lightning_protection(self, building_length, building_width, building_height, protection_level="Level III", roof_type="Flat"):
-        """
-        Calculate lightning protection requirements based on building dimensions
-        """
         building_area = building_length * building_width
         perimeter = 2 * (building_length + building_width)
         
-        # Calculate number of air terminals based on protection level and building dimensions
         spacing = self.air_terminal_spacing[protection_level]
         
-        # Determine height category for spacing
         if building_height < 10:
             height_category = "low"
         elif building_height < 20:
@@ -676,29 +1069,19 @@ class SGProEngine:
         
         terminal_spacing = spacing[height_category]
         
-        # Calculate number of air terminals along length and width
         terminals_length = math.ceil(building_length / terminal_spacing) + 1
         terminals_width = math.ceil(building_width / terminal_spacing) + 1
         
-        # For flat roofs, terminals are placed in a grid pattern
         if roof_type == "Flat":
             num_air_terminals = terminals_length * terminals_width
-        else:  # Pitched roof
-            # For pitched roofs, terminals along ridge and edges
+        else:
             num_air_terminals = terminals_length * 2 + terminals_width
         
-        # Calculate down conductors based on perimeter
-        # SS 555 requires down conductors every 20m along perimeter
         num_down_conductors = max(2, math.ceil(perimeter / 20))
-        
-        # Calculate test joints (one per down conductor at ground level)
         num_test_joints = num_down_conductors
         
-        # Calculate roof conductors (mesh network)
         roof_conductor_length = (terminals_length - 1) * building_width + (terminals_width - 1) * building_length
-        
-        # Calculate total conductor length
-        down_conductor_length = num_down_conductors * building_height * 2  # Up and down
+        down_conductor_length = num_down_conductors * building_height * 2
         total_conductor_length = roof_conductor_length + down_conductor_length
         
         protection_params = self.lightning_protection_levels[protection_level]
@@ -719,452 +1102,275 @@ class SGProEngine:
         }
     
     def calculate_emergency_lights(self, total_lights, escape_route_lights_percent=100, general_area_percent=30):
-        """
-        Calculate number of lights to be connected to generator
-        """
         emergency_lights = {
-            "escape_route_lights": int(total_lights * 0.2 * (escape_route_lights_percent / 100)),  # Assuming 20% are escape route lights
-            "general_area_lights": int(total_lights * 0.8 * (general_area_percent / 100)),  # Assuming 80% are general area
-            "exit_signs": int(total_lights * 0.1)  # Assuming 10% are exit signs
+            "escape_route_lights": int(total_lights * 0.2 * (escape_route_lights_percent / 100)),
+            "general_area_lights": int(total_lights * 0.8 * (general_area_percent / 100)),
+            "exit_signs": int(total_lights * 0.1)
         }
         
         emergency_lights["total_emergency_lights"] = emergency_lights["escape_route_lights"] + emergency_lights["general_area_lights"] + emergency_lights["exit_signs"]
-        emergency_lights["emergency_load_watts"] = emergency_lights["total_emergency_lights"] * 10  # Assuming 10W LED per fitting
+        emergency_lights["emergency_load_watts"] = emergency_lights["total_emergency_lights"] * 10
         
         return emergency_lights
-    
-    # ==================== CHECKLISTS ====================
-    
-    def generate_design_checklist(self):
-        """Generate comprehensive design stage checklist"""
-        return {
-            "Load Assessment": [
-                "✓ Calculate total connected load",
-                "✓ Determine diversity factors",
-                "✓ Identify essential and non-essential loads",
-                "✓ Calculate peak demand",
-                "✓ Consider future expansion (20% spare)"
-            ],
-            "Equipment Selection": [
-                "✓ Main breaker sizing (AT/AF selection)",
-                "✓ Cable sizing (current capacity + voltage drop)",
-                "✓ Generator sizing (running + starting loads)",
-                "✓ UPS sizing for critical loads",
-                "✓ Surge protection device selection"
-            ],
-            "Protection Coordination": [
-                "✓ Earth fault protection coordination",
-                "✓ Short circuit protection coordination",
-                "✓ Discrimination study for breakers",
-                "✓ Arc flash risk assessment",
-                "✓ Selectivity between main and sub-main"
-            ],
-            "Earthing System": [
-                "✓ Earth pit locations and quantity",
-                "✓ Earth resistance target (<1Ω)",
-                "✓ Test link points identification",
-                "✓ Equipotential bonding requirements",
-                "✓ Lightning protection integration"
-            ],
-            "Compliance Checks": [
-                "✓ SS 638 (Electrical installation)",
-                "✓ SS 555 (Lightning protection)",
-                "✓ Fire Code requirements",
-                "✓ SP Group technical requirements",
-                "✓ BCA approval requirements"
-            ]
-        }
-    
-    def generate_installation_checklist(self):
-        """Generate comprehensive installation stage checklist"""
-        return {
-            "Pre-Installation": [
-                "✓ Site inspection and verification",
-                "✓ Material delivery inspection",
-                "✓ Storage condition check",
-                "✓ Installation method statement review",
-                "✓ Safety permit requirements"
-            ],
-            "Cable Installation": [
-                "✓ Cable route verification",
-                "✓ Cable tray/ladder installation",
-                "✓ Proper cable segregation (LV, ELV, control)",
-                "✓ Cable pulling tension monitoring",
-                "✓ Minimum bending radius compliance",
-                "✓ Cable glanding and termination",
-                "✓ Cable identification and labeling"
-            ],
-            "Switchgear Installation": [
-                "✓ Switchgear positioning and leveling",
-                "✓ Busbar connection torque check",
-                "✓ Compartment cleanliness verification",
-                "✓ Door alignment and operation",
-                "✓ Ventilation requirements",
-                "✓ Clearance space verification"
-            ],
-            "Generator Installation": [
-                "✓ Base/foundation verification",
-                "✓ Anti-vibration mount installation",
-                "✓ Fuel line connection and testing",
-                "✓ Exhaust system installation",
-                "✓ Cooling system connection",
-                "✓ Battery and charger installation",
-                "✓ ATS installation and wiring"
-            ],
-            "Testing & Commissioning": [
-                "✓ Insulation resistance test",
-                "✓ Continuity test",
-                "✓ Polarity check",
-                "✓ Phase sequence verification",
-                "✓ Earth resistance measurement",
-                "✓ Functional testing of all breakers",
-                "✓ Protection relay testing",
-                "✓ Generator load bank testing",
-                "✓ Transfer switch operation test"
-            ]
-        }
-    
-    def generate_maintenance_checklist(self):
-        """Generate comprehensive maintenance stage checklist"""
-        return {
-            "Daily": [
-                "✓ Generator visual inspection",
-                "✓ Battery charger status check",
-                "✓ Fuel level verification",
-                "✓ Alarm panel status check",
-                "✓ Switchroom temperature check"
-            ],
-            "Weekly": [
-                "✓ Generator no-load run (30 minutes)",
-                "✓ Battery voltage measurement",
-                "✓ Coolant level check",
-                "✓ Engine oil level check",
-                "✓ Emergency lighting test",
-                "✓ Fire pump test run"
-            ],
-            "Monthly": [
-                "✓ Earth resistance measurement",
-                "✓ Load bank test (if applicable)",
-                "✓ Circuit breaker exercise",
-                "✓ Visual inspection of cables",
-                "✓ ATS operation test",
-                "✓ UPS battery test"
-            ],
-            "Quarterly": [
-                "✓ Thermal imaging of connections",
-                "✓ Torque check of all connections",
-                "✓ Insulation resistance test",
-                "✓ Protection relay calibration",
-                "✓ Battery load test",
-                "✓ Fuel system check"
-            ],
-            "Annually": [
-                "✓ Full load generator test",
-                "✓ Battery replacement (if needed)",
-                "✓ Oil and filter change",
-                "✓ Coolant replacement",
-                "✓ Air filter replacement",
-                "✓ Professional inspection",
-                "✓ Comprehensive system report"
-            ],
-            "5 Years": [
-                "✓ Cable replacement (if deteriorated)",
-                "✓ Switchgear overhaul",
-                "✓ Generator major overhaul",
-                "✓ Lightning protection system audit",
-                "✓ Earthing system upgrade (if needed)"
-            ]
-        }
-    
-    def generate_troubleshooting_guide(self):
-        """Generate troubleshooting guide for common issues"""
-        return {
-            "Generator Issues": {
-                "Fails to start": [
-                    "Check battery voltage (min 12.5V)",
-                    "Check fuel level and quality",
-                    "Check emergency stop button",
-                    "Check control panel fuses",
-                    "Check starter motor connections"
-                ],
-                "Runs but no output": [
-                    "Check AVR connections",
-                    "Check excitation system",
-                    "Check output breaker",
-                    "Check voltage regulator",
-                    "Check for tripped protection"
-                ],
-                "Overheating": [
-                    "Check cooling system",
-                    "Check radiator fins",
-                    "Check coolant level",
-                    "Check load level",
-                    "Check ambient temperature"
-                ]
-            },
-            "Switchgear Issues": {
-                "Breaker trips frequently": [
-                    "Check for overload condition",
-                    "Check for short circuit",
-                    "Check insulation resistance",
-                    "Check earth fault",
-                    "Check breaker calibration"
-                ],
-                "Overheating at connections": [
-                    "Check torque of connections",
-                    "Check for loose terminations",
-                    "Check load current",
-                    "Thermal imaging required",
-                    "Consider cable upgrade"
-                ]
-            },
-            "Cable Issues": {
-                "Voltage drop problems": [
-                    "Verify actual cable length",
-                    "Check actual load current",
-                    "Check power factor",
-                    "Consider cable upgrade",
-                    "Check for loose connections"
-                ],
-                "Insulation failure": [
-                    "Check for moisture ingress",
-                    "Check for mechanical damage",
-                    "Check termination quality",
-                    "Megger test required",
-                    "Consider cable replacement"
-                ]
-            },
-            "Earth Faults": {
-                "RCCB/ELR trips": [
-                    "Identify faulty circuit",
-                    "Check insulation resistance",
-                    "Check for moisture",
-                    "Check connected equipment",
-                    "Verify earth continuity"
-                ]
-            }
-        }
 
 # --- UI SETUP ---
-st.set_page_config(page_title="SG Electrical Design Pro - Complete Guide for Installers", layout="wide")
+st.set_page_config(page_title="SG Electrical Design Pro - Complete Room Design", layout="wide")
 engine = SGProEngine()
 
 st.title("⚡ Singapore Electrical Design Professional")
-st.subheader("Complete Design Guide for Installers & Junior Engineers")
-st.markdown("**Compliant with SS 638, SS 555, SP Group & BCA Requirements**")
+st.subheader("Complete Room-by-Room Design Guide for Installers & Engineers")
+st.markdown("**Compliant with SS 638, SS 531 (Lighting), SS 553 (Ventilation), SP Group & BCA Requirements**")
 
-# Sidebar with quick reference
+# Sidebar
 with st.sidebar:
     st.header("📋 Quick Reference")
-    st.info("**SS 638:** Singapore Standard for Electrical Installations")
-    st.info("**SS 555:** Lightning Protection Standard")
-    st.info("**SP Group:** Utility Technical Requirements")
+    st.info("**SS 638:** Electrical Installations")
+    st.info("**SS 531:** Lighting & Illumination")
+    st.info("**SS 553:** Ventilation & Air Conditioning")
     
     st.divider()
     
-    st.header("📐 Design Input Parameters")
-    
-    with st.expander("⚡ Main Electrical Parameters", expanded=True):
-        load_kw = st.number_input("Design Load (kW)", value=100.0)
-        pf = st.slider("Power Factor", 0.7, 1.0, 0.85)
-        voltage = 400  # Standard 3-Phase SG
-        ib = (load_kw * 1000) / (math.sqrt(3) * voltage * pf)
-        
-        cable_length = st.number_input("Cable Length from Source (m)", min_value=1.0, value=50.0)
-        max_vd_percent = st.slider("Max Voltage Drop (%)", 1.0, 8.0, 4.0, 0.5)
-    
-    with st.expander("🏢 Building Information"):
-        building_length = st.number_input("Building Length (m)", min_value=1.0, value=50.0)
-        building_width = st.number_input("Building Width (m)", min_value=1.0, value=30.0)
-        building_height = st.number_input("Building Height (m)", min_value=1.0, value=15.0)
-        roof_type = st.selectbox("Roof Type", ["Flat", "Pitched"])
-        protection_level = st.selectbox("Lightning Protection Level", 
-                                       ["Level I", "Level II", "Level III", "Level IV"], 
-                                       index=2)
-    
-    with st.expander("🔧 Installation Details"):
-        num_sub_feeders = st.number_input("Number of Outgoing Feeders", min_value=1, value=5)
-        include_spare = st.checkbox("Include 20% Future Spare Space", value=True)
+    st.header("🏢 Building Information")
+    building_length = st.number_input("Building Length (m)", min_value=1.0, value=50.0)
+    building_width = st.number_input("Building Width (m)", min_value=1.0, value=30.0)
+    building_height = st.number_input("Building Height (m)", min_value=1.0, value=15.0)
+    roof_type = st.selectbox("Roof Type", ["Flat", "Pitched"])
+    protection_level = st.selectbox("Lightning Protection Level", 
+                                   ["Level I", "Level II", "Level III", "Level IV"], 
+                                   index=2)
 
 # Create main tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
-    "📚 INSTALLER'S GUIDE",  # Educational section for installers
-    "📊 Main MSB Design", 
-    "🏢 Room Load Calculator",
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "🏢 ROOM DESIGN (Lighting, Sockets, Fans)",
+    "📊 Main MSB Design",
     "🔌 Cable & Containment",
-    "🔄 Generator Systems", 
-    "⛓️ Earthing Design", 
-    "⚡ Lightning Protection", 
-    "💡 Emergency Lighting",
-    "📋 Project Checklists",
-    "🛠️ Maintenance & Troubleshooting"
+    "🔄 Generator Systems",
+    "⚡ Lightning Protection",
+    "📋 Checklists"
 ])
 
-# ==================== TAB 1: INSTALLER'S GUIDE (EDUCATIONAL) ====================
+# ==================== TAB 1: COMPREHENSIVE ROOM DESIGN ====================
 with tab1:
-    st.header("📚 ELECTRICAL INSTALLATION GUIDE FOR INSTALLERS & JUNIOR ENGINEERS")
-    st.write("**Singapore Standards (SS 638, SS 555) Compliant**")
+    st.header("🏢 Complete Room Electrical Design")
+    st.write("Design lighting, socket outlets, isolators, and ventilation fans for any room")
     st.write("---")
     
-    st.info("""
-    **👷 HOW TO USE THIS APPLICATION:**
-    This tool is designed to guide you through the complete electrical design process.
-    Each tab provides calculations AND explanations of WHY and HOW to do it correctly.
-    
-    **For Junior Engineers:** Read the educational notes in each section to understand the theory.
-    **For Installers:** Follow the step-by-step guides and checklists for proper installation.
-    """)
-    
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.subheader("🎓 BASIC ELECTRICAL THEORY")
+        st.subheader("1️⃣ Room Information")
         
-        with st.expander("📐 Ohm's Law & Power Calculations"):
-            st.markdown("""
-            **Ohm's Law:** V = I × R
-            - V = Voltage (Volts)
-            - I = Current (Amperes)
-            - R = Resistance (Ohms)
-            
-            **Power in 3-Phase Systems:**
-            - P (kW) = √3 × V × I × PF ÷ 1000
-            - I (Amps) = P × 1000 ÷ (√3 × V × PF)
-            
-            **Example:** 
-            100kW load at 400V, 0.85PF
-            I = 100,000 ÷ (1.732 × 400 × 0.85) = 170 Amps
-            """)
+        # Room selection
+        room_types = list(engine.lighting_standards.keys())
+        selected_room = st.selectbox("Select Room Type", room_types, key="room_type_main")
         
-        with st.expander("🔋 Power Factor Explained"):
-            st.markdown("""
-            **Power Factor (PF)** = Real Power (kW) ÷ Apparent Power (kVA)
-            
-            - **PF = 1.0:** Pure resistive load (heaters, lights)
-            - **PF = 0.8-0.9:** Typical motors, transformers
-            - **PF < 0.8:** Poor power factor (waste energy)
-            
-            **Why it matters:**
-            - Lower PF = Higher current = Larger cables
-            - SP Group charges penalty for PF < 0.85
-            - Fix with capacitor banks
-            """)
+        # Room dimensions
+        st.write("**Room Dimensions:**")
+        col_dim1, col_dim2, col_dim3 = st.columns(3)
+        with col_dim1:
+            room_length = st.number_input("Length (m)", min_value=1.0, value=10.0, key="room_length")
+        with col_dim2:
+            room_width = st.number_input("Width (m)", min_value=1.0, value=8.0, key="room_width")
+        with col_dim3:
+            room_height = st.number_input("Height (m)", min_value=2.0, value=3.0, key="room_height")
         
-        with st.expander("🔌 Cable Current Rating (Iz)"):
-            st.markdown("""
-            **Iz** = Current carrying capacity of cable
-            
-            **Factors affecting Iz:**
-            1. Installation method (air, conduit, buried)
-            2. Ambient temperature
-            3. Grouping of cables
-            4. Insulation type (XLPE, PVC)
-            
-            **Rule of thumb:** Select cable with Iz ≥ 1.25 × Ib
-            - Ib = Design current
-            - 25% safety margin for continuous load
-            """)
+        # Air conditioning status
+        is_aircond = st.radio("Air Conditioning Status", 
+                             ["Air Conditioned", "Non Air Conditioned (Fan Only)"],
+                             index=0)
         
-        with st.expander("📉 Voltage Drop Explained"):
-            st.markdown("""
-            **Voltage Drop** = Loss of voltage along cable length
-            
-            **SS 638 Limits:**
-            - Lighting circuits: 3% maximum
-            - Power circuits: 5% maximum
-            - Overall installation: 4% typical
-            
-            **Formula:** Vd = √3 × I × L × (R cosφ + X sinφ) ÷ 1000
-            
-            **Consequences of high Vd:**
-            - Motors run hot, lose torque
-            - Lights dim
-            - Equipment malfunctions
-            - Energy waste
-            """)
-    
-    with col2:
-        st.subheader("📋 SS 638 QUICK REFERENCE")
+        # Additional equipment
+        st.write("**Equipment Present:**")
+        has_lighting = st.checkbox("General Lighting", value=True)
+        has_sockets = st.checkbox("Socket Outlets", value=True)
+        has_special_equip = st.checkbox("Special Equipment (Kitchen, Pumps, etc.)")
         
-        with st.expander("🔧 Installation Methods (Reference)"):
-            st.markdown("""
-            **Method A:** Conduit in insulated wall
-            **Method B:** Conduit on wall surface
-            **Method C:** Direct in plaster
-            **Method E:** In free air (cable tray)
-            **Method D:** Buried direct in ground
-            
-            **Most common:** Method E for cable tray installations
-            """)
+        if has_special_equip:
+            special_equip = st.multiselect("Select Equipment Types",
+                                          ["Kitchen Equipment", "Water Heater", "Pump / Motor", 
+                                           "Air Conditioner", "Industrial Machine"])
+        else:
+            special_equip = []
         
-        with st.expander("🌡️ Derating Factors"):
-            st.markdown("""
-            **Ambient Temperature (Method E):**
-            - 30°C: 1.00
-            - 35°C: 0.96
-            - 40°C: 0.91
-            - 45°C: 0.87
+        if st.button("Calculate Room Design", type="primary", use_container_width=True):
+            # Prepare equipment list
+            equipment_list = []
+            if has_lighting:
+                equipment_list.append("lighting")
+            if has_sockets:
+                equipment_list.append("sockets")
+            equipment_list.extend([e.lower() for e in special_equip])
             
-            **Grouping (touching):**
-            - 2 cables: 0.80
-            - 3 cables: 0.70
-            - 4 cables: 0.65
-            - 5 cables: 0.60
-            
-            **Always apply derating to Iz!**
-            """)
-        
-        with st.expander("🛡️ Protection Types"):
-            st.markdown("""
-            **MCB** (Miniature Circuit Breaker):
-            - Up to 63A
-            - For lighting, socket outlets
-            
-            **MCCB** (Moulded Case CB):
-            - 100A to 1600A
-            - For sub-mains, large loads
-            
-            **ACB** (Air Circuit Breaker):
-            - 800A and above
-            - For main incomer, generators
-            
-            **RCCB/ELCB** (Earth Leakage):
-            - 30mA for shock protection
-            - 100-300mA for fire protection
-            """)
-        
-        with st.expander("⚡ Earthing Types (TT, TN-S, TN-C-S)"):
-            st.markdown("""
-            **Singapore uses TT System:**
-            - Each building has own earth electrodes
-            - Independent of utility earth
-            
-            **TN-S:** Separate neutral and earth throughout
-            **TN-C-S:** Combined neutral/earth (PEN) in supply
-            
-            **Key requirement:** Earth resistance < 1Ω combined
-            """)
-    
-    st.divider()
-    
-    # Step-by-step design process
-    st.subheader("👷 STEP-BY-STEP DESIGN PROCESS")
-    
-    steps = [
-        ("1. Load Assessment", "Calculate all loads, apply diversity", "Complete"),
-        ("2. Cable Sizing", "Size based on current + voltage drop", "Complete"),
-        ("3. Protection Selection", "Select breakers, coordinate protection", "Complete"),
-        ("4. Cable Containment", "Size cable trays, trunking", "Complete"),
-        ("5. Generator Sizing", "Essential loads + starting currents", "Complete"),
-        ("6. Earthing Design", "Earth pits, bonding, test links", "Complete"),
-        ("7. Lightning Protection", "Air terminals, down conductors", "Complete"),
-        ("8. Emergency Lighting", "Escape route coverage", "Complete"),
-        ("9. Switchboard Layout", "Physical arrangement, clearances", "Complete"),
-        ("10. Documentation", "Single line diagrams, schedules", "Complete")
-    ]
-    
-    for step, desc, status in steps:
-        st.markdown(f"**{step}** - {desc}  ✅")
+            with col2:
+                st.subheader("2️⃣ DESIGN RESULTS")
+                
+                # ===== LIGHTING DESIGN =====
+                if has_lighting:
+                    st.write("### 💡 Lighting Design")
+                    lighting = engine.calculate_lighting_design(selected_room, room_length, room_width, room_height)
+                    
+                    if lighting:
+                        col_light1, col_light2, col_light3 = st.columns(3)
+                        with col_light1:
+                            st.metric("Area", f"{lighting['area']:.1f} m²")
+                        with col_light2:
+                            st.metric("Required Lux", f"{lighting['recommended_lux']} lx")
+                        with col_light3:
+                            st.metric("Achieved Lux", f"{lighting['actual_lux']:.0f} lx")
+                        
+                        st.write(f"**Fitting Type:** {lighting['fitting_type']}")
+                        st.write(f"**Number of Fittings:** {lighting['num_fittings']} nos")
+                        st.write(f"**Layout:** {lighting['fittings_length']} rows × {lighting['fittings_width']} columns")
+                        st.write(f"**Spacing:** {lighting['spacing_length']:.1f}m (L) × {lighting['spacing_width']:.1f}m (W)")
+                        st.write(f"**Total Load:** {lighting['total_watts']}W ({lighting['watts_per_m2']:.1f} W/m²)")
+                        st.write(f"**Switches Required:** {lighting['num_switches']} nos (at entrance)")
+                        st.write(f"**Emergency Fittings:** {lighting['emergency_fittings']} nos")
+                        st.write(f"**Color Temperature:** {lighting['color_temp']}")
+                        st.write(f"**CRI:** {lighting['cri']}")
+                        st.write(f"**IP Rating:** {lighting['ip_rating']}")
+                        
+                        # Isolator for lighting
+                        st.write("**Isolator Requirement:** Light switch at entrance (required)")
+                    
+                    st.divider()
+                
+                # ===== SOCKET OUTLET DESIGN =====
+                if has_sockets:
+                    st.write("### 🔌 Socket Outlet Design")
+                    sockets = engine.calculate_socket_outlets(selected_room, room_length, room_width)
+                    
+                    if sockets:
+                        st.write(f"**Number of Sockets:** {sockets['num_sockets']} nos")
+                        st.write(f"**Socket Type:** {sockets['socket_type']}")
+                        st.write(f"**Circuit Type:** {sockets['circuit_type']}")
+                        st.write(f"**Number of Circuits:** {sockets['num_circuits']} (max {sockets['max_sockets_per_circuit']} per circuit)")
+                        st.write(f"**Total Load:** {sockets['total_load_kw']:.2f} kW ({sockets['current_per_phase']:.1f} A per phase)")
+                        st.write(f"**Placement:** {sockets['placement']}")
+                        
+                        st.write("**Special Requirements:**")
+                        for req in sockets['special_requirements']:
+                            st.write(f"- {req}")
+                        
+                        # Isolator for sockets
+                        st.write("**Isolator Requirement:** MCB in Distribution Board")
+                    
+                    st.divider()
+                
+                # ===== ISOLATOR REQUIREMENTS =====
+                st.write("### 🔒 Isolator Requirements")
+                isolators = engine.get_isolator_requirements(selected_room, equipment_list)
+                
+                if isolators:
+                    for iso in isolators:
+                        st.write(f"**{iso['equipment']}:**")
+                        st.write(f"- Type: {iso['type']}")
+                        st.write(f"- Location: {iso['location']}")
+                        st.write(f"- Purpose: {iso['details']['purpose']}")
+                else:
+                    st.write("No specific isolators required beyond standard switches")
+                
+                st.divider()
+                
+                # ===== FAN & VENTILATION DESIGN =====
+                ac_status = "Air Conditioned" in is_aircond
+                st.write(f"### {'🌀' if not ac_status else '❄️'} Ventilation & Fan Design")
+                st.write(f"**Status:** {'Air Conditioned' if ac_status else 'Non Air Conditioned'}")
+                
+                fans = engine.calculate_fan_requirements(selected_room, room_length, room_width, room_height, ac_status)
+                
+                if fans:
+                    st.write(f"**Room Volume:** {fans['volume']:.1f} m³")
+                    st.write(f"**Required Air Changes:** {fans['ach_required']} ACH")
+                    st.write(f"**Required Airflow:** {fans['required_cfm']:.0f} CFM")
+                    st.write(f"**Purpose:** {fans['primary_purpose']}")
+                    
+                    if fans['fan_recommendations']:
+                        st.write("**Fan Recommendations:**")
+                        for fan in fans['fan_recommendations']:
+                            with st.expander(f"**{fan['type']}**"):
+                                if 'blade_size' in fan:
+                                    st.write(f"- Blade Size: {fan['blade_size']}")
+                                if 'size' in fan:
+                                    st.write(f"- Size: {fan['size']}")
+                                st.write(f"- Quantity: {fan['num_fans']} units")
+                                if 'cfm_per_fan' in fan:
+                                    st.write(f"- Airflow per fan: {fan['cfm_per_fan']} CFM")
+                                st.write(f"- Total Airflow: {fan['total_cfm']} CFM")
+                                st.write(f"- Total Power: {fan['power_watts']}W")
+                                if 'mounting_height' in fan:
+                                    st.write(f"- Mounting Height: {fan['mounting_height']}")
+                                if 'noise_level' in fan:
+                                    st.write(f"- Noise Level: {fan['noise_level']}")
+                                if 'speed_control' in fan:
+                                    st.write(f"- Speed Control: {fan['speed_control']}")
+                                if 'note' in fan:
+                                    st.write(f"- Note: {fan['note']}")
+                    
+                    st.write(f"**Total Fan Power:** {fans['total_power_watts']}W")
+                    st.write(f"**Notes:** {fans['notes']}")
+                    
+                    # Fan isolator requirements
+                    if fans['total_power_watts'] > 0:
+                        st.write("**Isolator Requirements:**")
+                        for fan in fans['fan_recommendations']:
+                            if "HVLS" in fan['type'] or "Wall Mounted" in fan['type']:
+                                st.write(f"- {fan['type']}: Local isolator with lockable handle required")
+                            else:
+                                st.write(f"- {fan['type']}: Wall switch/speed controller only")
+                
+                st.divider()
+                
+                # ===== SUMMARY =====
+                st.success("### 📋 Summary")
+                
+                total_power = 0
+                if has_lighting and lighting:
+                    total_power += lighting['total_watts']
+                if has_sockets and sockets:
+                    total_power += sockets['total_load_watts']
+                if fans and 'total_power_watts' in fans:
+                    total_power += fans['total_power_watts']
+                
+                st.write(f"**Total Electrical Load:** {total_power/1000:.2f} kW")
+                st.write(f"**Total Current (at 230V):** {total_power/230:.1f} A")
+                
+                # Recommend circuit breaker
+                if total_power > 0:
+                    current = total_power / 230
+                    if current <= 20:
+                        st.write("**Recommended Circuit:** 20A Radial Circuit")
+                    elif current <= 32:
+                        st.write("**Recommended Circuit:** 32A Radial Circuit")
+                    else:
+                        st.write(f"**Recommended:** Multiple Circuits ({math.ceil(current/20)} × 20A circuits)")
+                
+                # Download design report option
+                st.download_button(
+                    label="📥 Download Design Report",
+                    data=f"""ROOM ELECTRICAL DESIGN REPORT
+Room Type: {selected_room}
+Dimensions: {room_length}m × {room_width}m × {room_height}m
+Area: {room_length * room_width:.1f} m²
+
+LIGHTING DESIGN:
+- Fittings: {lighting['num_fittings'] if has_lighting else 'N/A'} nos
+- Lux Level: {lighting['actual_lux']:.0f} lx
+- Power: {lighting['total_watts'] if has_lighting else 0}W
+
+SOCKET OUTLETS:
+- Quantity: {sockets['num_sockets'] if has_sockets else 'N/A'} nos
+- Load: {sockets['total_load_kw'] if has_sockets else 0}kW
+
+FAN REQUIREMENTS:
+- Type: {fans['fan_recommendations'][0]['type'] if fans['fan_recommendations'] else 'None'}
+- Quantity: {fans['fan_recommendations'][0]['num_fans'] if fans['fan_recommendations'] else 0}
+- Power: {fans['total_power_watts']}W
+
+TOTAL LOAD: {total_power/1000:.2f} kW
+""",
+                    file_name=f"{selected_room}_design_report.txt",
+                    mime="text/plain"
+                )
 
 # ==================== TAB 2: MAIN MSB DESIGN ====================
 with tab2:
@@ -1174,172 +1380,48 @@ with tab2:
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.info("### 📋 Breaker & Cable Schedule")
+        st.subheader("Load Parameters")
+        load_kw = st.number_input("Design Load (kW)", value=100.0, key="msb_load")
+        pf = st.slider("Power Factor", 0.7, 1.0, 0.85, key="msb_pf")
+        cable_length = st.number_input("Cable Length (m)", min_value=1.0, value=50.0, key="msb_cable_length")
+        max_vd = st.slider("Max Voltage Drop %", 1.0, 8.0, 4.0, 0.5, key="msb_vd")
+        num_feeder = st.number_input("Number of Outgoing Feeders", min_value=1, value=5, key="msb_feeders")
         
-        # Calculate main breaker
-        at, af = engine.get_at_af(ib)
-        b_type = "ACB" if af >= 800 else "MCCB" if af > 63 else "MCB"
+        ib = (load_kw * 1000) / (math.sqrt(3) * 400 * pf)
         
-        st.metric("Design Current (Ib)", f"{ib:.2f} A")
-        st.success(f"**Incomer:** {at}AT / {af}AF {b_type}")
-        
-        # Cable selection with voltage drop
-        cable_result = engine.select_cable_with_vd(ib, cable_length, pf, max_vd_percent)
-        
-        if "error" in cable_result:
-            st.error(f"⚠️ {cable_result['error']}")
-        else:
-            st.write(f"**Main Incomer Cable:** {cable_result['size']} sqmm Cu/XLPE/SWA/PVC")
-            st.write(f"**Current Capacity (Iz):** {cable_result['iz']} A")
-            
-            # Voltage drop display with color coding
-            vd_color = "🟢" if cable_result['vd_percent'] <= max_vd_percent else "🔴"
-            st.write(f"**Voltage Drop:** {vd_color} {cable_result['vd']:.2f} V ({cable_result['vd_percent']:.2f}%)")
-            
-            if "warning" in cable_result:
-                st.warning(f"⚠️ {cable_result['warning']}")
-        
-        st.divider()
-        
-        # Educational note
-        with st.expander("📚 HOW TO SELECT MAIN BREAKER (For Junior Engineers)"):
-            st.markdown(engine.get_installer_notes("cable_sizing"))
-    
-    with col2:
-        st.warning("### 📏 Switchroom Layout Requirements")
-        
-        # Calculate MSB physical size
-        base_width = 800 if b_type == "ACB" else 600
-        sub_feeder_width = (num_sub_feeders * 400)
-        metering_width = 400 if at > 100 else 0
-        total_width = base_width + sub_feeder_width + metering_width
-        
-        if include_spare:
-            total_width *= 1.2
-        
-        # Clearance data
-        clearance_data = {
-            "Position": ["Front (Withdrawal)", "Rear (Terminations)", "Left Side", "Right Side", "Top"],
-            "Minimum": ["1500 mm", "800 mm", "800 mm", "800 mm", "500 mm"],
-            "Purpose": ["ACB removal", "Cable termination", "Access/Ventilation", "Access/Ventilation", "Busbar access"]
-        }
-        st.table(clearance_data)
-        
-        st.write(f"**Estimated MSB Width:** {total_width:.0f} mm")
-        st.info(f"**Room Depth Required:** Front(1500) + Board(800) + Rear(800) = 3100 mm")
-        
-        # Educational note
-        with st.expander("📚 SWITCHROOM INSTALLATION GUIDE"):
-            st.markdown(engine.get_installer_notes("switchroom"))
-
-# ==================== TAB 3: ROOM LOAD CALCULATOR ====================
-with tab3:
-    st.header("🏢 Room Electrical Load Calculator")
-    st.write("Calculate power requirements for different room types based on SS 638 guidelines")
-    st.write("---")
-    
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        st.subheader("➕ Add Rooms")
-        
-        # Room selection interface
-        room_types = list(engine.room_load_database.keys())
-        selected_rooms = []
-        
-        num_room_types = st.number_input("Number of different room types", min_value=1, max_value=10, value=3)
-        
-        for i in range(num_room_types):
-            st.markdown(f"**Room Type {i+1}**")
-            col_room, col_area, col_qty = st.columns(3)
-            with col_room:
-                room_type = st.selectbox(f"Type", room_types, key=f"room_type_{i}")
-            with col_area:
-                area = st.number_input(f"Area (m²)", min_value=1.0, value=100.0, key=f"room_area_{i}")
-            with col_qty:
-                qty = st.number_input(f"Quantity", min_value=1, value=1, key=f"room_qty_{i}")
-            
-            selected_rooms.append({
-                "type": room_type,
-                "area": area,
-                "quantity": qty
-            })
-            st.divider()
-    
-    with col2:
-        st.subheader("📊 Calculated Loads")
-        
-        if selected_rooms:
-            room_loads = []
-            total_load = 0
-            
-            for room in selected_rooms:
-                result = engine.calculate_room_load(room["type"], room["area"], room["quantity"])
-                if result:
-                    room_loads.append(result)
+        if st.button("Calculate MSB", type="primary"):
+            with col2:
+                st.subheader("Results")
+                
+                # Breaker selection
+                at, af = engine.get_at_af(ib)
+                b_type = "ACB" if af >= 800 else "MCCB" if af > 63 else "MCB"
+                
+                st.metric("Design Current (Ib)", f"{ib:.2f} A")
+                st.success(f"**Incomer:** {at}AT / {af}AF {b_type}")
+                
+                # Cable selection
+                cable = engine.select_cable_with_vd(ib, cable_length, pf, max_vd)
+                
+                if "error" in cable:
+                    st.error(cable["error"])
+                else:
+                    st.write(f"**Cable:** {cable['size']} mm² Cu/XLPE/SWA/PVC")
+                    st.write(f"**Current Capacity:** {cable['iz']} A")
+                    vd_color = "🟢" if cable['vd_percent'] <= max_vd else "🔴"
+                    st.write(f"**Voltage Drop:** {vd_color} {cable['vd']:.2f}V ({cable['vd_percent']:.2f}%)")
                     
-                    with st.expander(f"**{room['type']}** (Qty: {room['quantity']} × {room['area']}m²)"):
-                        st.write(f"Description: {result['description']}")
-                        st.write(f"Lighting: {result['lighting_load_kw']:.2f} kW")
-                        st.write(f"Sockets: {result['socket_load_kw']:.2f} kW")
-                        st.write(f"Equipment: {result['equipment_load_kw']:.2f} kW")
-                        st.write(f"Air Conditioning: {result['ac_load_kw']:.2f} kW")
-                        st.write(f"**Total (after diversity): {result['total_with_quantity_kw']:.2f} kW**")
-                        st.write(f"**Current: {result['current_a']:.1f} A**")
-                        
-                        st.write("**Typical Equipment:**")
-                        for eq in result['typical_equipment'][:3]:
-                            st.write(f"- {eq}")
-                        
-                        if result['special_requirements']:
-                            st.write("**Special Requirements:**")
-                            for req in result['special_requirements']:
-                                st.write(f"- {req}")
-            
-            # Calculate building total
-            if room_loads:
-                total = engine.calculate_building_total_load(room_loads)
+                    if "warning" in cable:
+                        st.warning(cable["warning"])
                 
-                st.success("### 🏢 BUILDING TOTAL")
-                st.write(f"**Total Diversified Load:** {total['final_load_kw']:.2f} kW")
-                st.write(f"**Total Current:** {total['final_current_a']:.1f} A")
-                
-                # Recommend main breaker
-                at_total, af_total = engine.get_at_af(total['final_current_a'])
-                st.info(f"**Recommended Main Breaker:** {at_total}AT / {af_total}AF")
-    
-    # Educational note
-    with st.expander("📚 ROOM LOAD CALCULATION GUIDE (SS 638)"):
-        st.markdown("""
-        **Room Load Calculation Principles:**
-        
-        1. **Lighting Load:** Based on W/m² from SS 638
-           - Office: 15 W/m²
-           - Carpark: 5 W/m²
-           - Staircase: 8 W/m²
-        
-        2. **Socket Outlet Load:** 
-           - General offices: 25 W/m²
-           - Assume 50% diversity
-        
-        3. **Equipment Load:**
-           - Computers, printers, etc.
-           - Special equipment (servers, medical) calculated separately
-        
-        4. **Diversity Factors:**
-           - Not all equipment runs simultaneously
-           - Apply diversity per SS 638 Table 1A
-           - Overall building diversity: 0.6-0.8
-        
-        5. **Future Expansion:**
-           - Always include 20-30% spare capacity
-           - Allow for future tenancy changes
-        """)
+                # MSB physical size
+                base_width = 800 if b_type == "ACB" else 600
+                total_width = (base_width + num_feeder * 400) * 1.2
+                st.write(f"**Estimated MSB Width:** {total_width:.0f} mm")
 
-# ==================== TAB 4: CABLE & CONTAINMENT ====================
-with tab4:
+# ==================== TAB 3: CABLE & CONTAINMENT ====================
+with tab3:
     st.header("🔌 Cable & Containment Sizing")
-    st.write("Calculate cable tray/trunking sizes based on cable quantities")
     st.write("---")
     
     col1, col2 = st.columns([1, 1])
@@ -1347,11 +1429,8 @@ with tab4:
     with col1:
         st.subheader("Cable Tray Sizing")
         
-        # Input cables for tray
-        st.write("**Select cables to install in tray:**")
-        
         available_cables = list(engine.cable_db.keys())
-        num_cables = st.number_input("Number of different cable sizes", min_value=1, value=3, key="num_tray_cables")
+        num_cables = st.number_input("Number of different cable sizes", min_value=1, value=3, key="tray_num")
         
         cables_in_tray = []
         for i in range(num_cables):
@@ -1364,469 +1443,136 @@ with tab4:
             for _ in range(qty):
                 cables_in_tray.append(cable_size)
         
-        # Tray parameters
-        tray_depth = st.selectbox("Tray depth (mm)", [50, 75, 100, 150])
-        tray_type = st.selectbox("Tray type", ["perforated", "ladder", "solid", "wire_mesh"])
-        spare_capacity = st.slider("Spare capacity %", 0, 50, 25) / 100
+        tray_depth = st.selectbox("Tray depth (mm)", [50, 75, 100, 150], key="tray_depth")
+        tray_type = st.selectbox("Tray type", ["perforated", "ladder", "solid", "wire_mesh"], key="tray_type")
+        spare = st.slider("Spare capacity %", 0, 50, 25, key="tray_spare") / 100
         
-        if st.button("Calculate Tray Size", type="primary"):
-            result = engine.calculate_cable_tray_size(cables_in_tray, tray_depth, tray_type, spare_capacity)
+        if st.button("Calculate Tray", type="primary"):
+            result = engine.calculate_cable_tray_size(cables_in_tray, tray_depth, tray_type, spare)
             
             with col2:
-                st.subheader("📊 Tray Sizing Results")
-                
+                st.subheader("Results")
                 st.write(f"**Total Cable Area:** {result['total_cable_area']:.0f} mm²")
-                st.write(f"**With {spare_capacity*100:.0f}% Spare:** {result['total_area_with_spare']:.0f} mm²")
+                st.write(f"**With {spare*100:.0f}% Spare:** {result['total_area_with_spare']:.0f} mm²")
                 st.write(f"**Required Width:** {result['required_width']:.0f} mm")
-                st.write(f"**Selected Tray Width:** {result['selected_width']} mm")
+                st.write(f"**Selected Tray:** {result['selected_width']} mm wide")
                 st.write(f"**Actual Fill:** {result['actual_fill_percentage']:.1f}%")
                 
                 if result['actual_fill_percentage'] <= result['fill_factor'] * 100:
                     st.success("✅ Tray size is adequate")
                 else:
                     st.error("⚠️ Tray is overfilled - select larger size")
-                
-                st.write("**Cable Details:**")
-                for cable in result['cable_details']:
-                    st.write(f"- {cable['size']}mm²: Ø{cable['diameter']}mm, Area {cable['area']:.0f}mm²")
-    
-    # Educational notes
-    st.divider()
-    with st.expander("📚 CABLE CONTAINMENT INSTALLATION GUIDE", expanded=True):
-        st.markdown(engine.get_installer_notes("cable_containment"))
-    
-    with st.expander("📚 CABLE SIZING STEP-BY-STEP"):
-        st.markdown(engine.get_installer_notes("cable_sizing"))
 
-# ==================== TAB 5: GENERATOR SYSTEMS ====================
-with tab5:
-    st.header("🔄 Generator Sizing for Essential & Fire Services")
+# ==================== TAB 4: GENERATOR SYSTEMS ====================
+with tab4:
+    st.header("🔄 Generator Sizing")
     st.write("---")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Essential Loads (Must Run During Power Outage)")
-        
-        # Lift inputs
-        st.write("**🚡 Lift Motors (Homing Function)**")
-        num_lifts = st.number_input("Number of Lifts", min_value=0, value=2, key="gen_num_lifts")
+        st.subheader("Essential Loads")
+        num_lifts = st.number_input("Number of Lifts", min_value=0, value=2, key="gen_lifts")
         lift_loads = []
-        lift_starting_kvas = []
+        lift_starting = []
         
         for i in range(num_lifts):
             lift_kw = st.number_input(f"Lift {i+1} Motor (kW)", value=10.0, key=f"gen_lift_{i}_kw")
             lift_pf = st.slider(f"Lift {i+1} PF", 0.7, 1.0, 0.85, key=f"gen_lift_{i}_pf")
-            lift_type = st.selectbox(f"Lift {i+1} Starting Type", 
-                                    ["Lift (Variable Speed)", "Lift (Star-Delta)"], 
-                                    key=f"gen_lift_{i}_type")
             
-            running_kva = (lift_kw * 1000) / (math.sqrt(3) * voltage * lift_pf) / 1000
-            starting_multiplier = engine.motor_starting_multipliers[lift_type]
-            starting_kva = running_kva * starting_multiplier
+            running = (lift_kw * 1000) / (math.sqrt(3) * 400 * lift_pf) / 1000
+            starting = running * 2.5  # Typical multiplier
             
-            lift_loads.append(running_kva)
-            lift_starting_kvas.append(starting_kva)
-            
-            st.caption(f"  Running: {running_kva:.1f} kVA | Starting: {starting_kva:.1f} kVA")
-        
-        # Other essential loads
-        st.write("**🏢 Other Essential Loads**")
-        num_essential = st.number_input("Number of Other Essential Loads", min_value=0, value=2, key="gen_num_essential")
-        essential_loads = lift_loads.copy()
-        
-        for i in range(num_essential):
-            load_desc = st.text_input(f"Load {i+1} Description", value=f"Essential Load {i+1}", key=f"gen_ess_desc_{i}")
-            load_kva = st.number_input(f"{load_desc} (kVA)", value=5.0, key=f"gen_ess_load_{i}")
-            essential_loads.append(load_kva)
+            lift_loads.append(running)
+            lift_starting.append(starting)
+            st.caption(f"Running: {running:.1f} kVA | Starting: {starting:.1f} kVA")
     
     with col2:
-        st.subheader("🔥 Fire Fighting Loads (Must Run During Fire)")
-        
-        # Fire pump inputs
-        st.write("**🚒 Fire Pump System**")
-        has_fire_pump = st.checkbox("Include Fire Pump", value=True, key="gen_has_fire_pump")
-        
+        st.subheader("Fire Loads")
+        has_pump = st.checkbox("Include Fire Pump", value=True, key="gen_pump")
         fire_loads = []
-        fire_starting_kvas = []
+        fire_starting = []
         
-        if has_fire_pump:
-            main_pump_kw = st.number_input("Main Fire Pump Motor (kW)", value=30.0, key="gen_main_pump_kw")
-            main_pump_pf = st.slider("Main Fire Pump PF", 0.7, 1.0, 0.85, key="gen_main_pump_pf")
-            pump_type = st.selectbox("Fire Pump Starting Type", 
-                                    ["Fire Pump (Direct Online)", "Fire Pump (Star-Delta)", "Fire Pump (Soft Starter)"],
-                                    key="gen_pump_type")
+        if has_pump:
+            pump_kw = st.number_input("Fire Pump Motor (kW)", value=30.0, key="gen_pump_kw")
+            pump_pf = st.slider("Fire Pump PF", 0.7, 1.0, 0.85, key="gen_pump_pf")
+            pump_type = st.selectbox("Starting Type", 
+                                    ["Direct Online", "Star-Delta", "Soft Starter"], key="gen_pump_type")
             
-            running_kva = (main_pump_kw * 1000) / (math.sqrt(3) * voltage * main_pump_pf) / 1000
-            starting_multiplier = engine.motor_starting_multipliers[pump_type]
-            starting_kva = running_kva * starting_multiplier
+            multiplier = {"Direct Online": 6.0, "Star-Delta": 3.5, "Soft Starter": 2.5}[pump_type]
+            running = (pump_kw * 1000) / (math.sqrt(3) * 400 * pump_pf) / 1000
+            starting = running * multiplier
             
-            fire_loads.append(running_kva)
-            fire_starting_kvas.append(starting_kva)
-            
-            st.caption(f"  Running: {running_kva:.1f} kVA | Starting: {starting_kva:.1f} kVA")
-            
-            # Jockey pump
-            has_jockey = st.checkbox("Include Jockey Pump", value=True, key="gen_has_jockey")
-            if has_jockey:
-                jockey_kw = st.number_input("Jockey Pump Motor (kW)", value=2.2, key="gen_jockey_kw")
-                jockey_pf = st.slider("Jockey Pump PF", 0.7, 1.0, 0.85, key="gen_jockey_pf")
-                jockey_running = (jockey_kw * 1000) / (math.sqrt(3) * voltage * jockey_pf) / 1000
-                fire_loads.append(jockey_running)
-                st.caption(f"  Jockey Pump Running: {jockey_running:.1f} kVA")
+            fire_loads.append(running)
+            fire_starting.append(starting)
+            st.caption(f"Running: {running:.1f} kVA | Starting: {starting:.1f} kVA")
+    
+    if st.button("Calculate Generator", type="primary"):
+        all_starting = lift_starting + fire_starting
+        largest = max(all_starting) if all_starting else 0
         
-        # Pressurization fans
-        st.write("**💨 Staircase Pressurization Fans**")
-        num_fans = st.number_input("Number of Pressurization Fans", min_value=0, value=2, key="gen_num_fans")
+        required, recommended, running, starting = engine.calculate_generator_size(
+            lift_loads, fire_loads, largest
+        )
         
-        for i in range(num_fans):
-            fan_kw = st.number_input(f"Fan {i+1} Motor (kW)", value=5.5, key=f"gen_fan_{i}_kw")
-            fan_pf = st.slider(f"Fan {i+1} PF", 0.7, 1.0, 0.85, key=f"gen_fan_{i}_pf")
-            fan_running = (fan_kw * 1000) / (math.sqrt(3) * voltage * fan_pf) / 1000
-            fire_loads.append(fan_running)
-    
-    # Generator calculation
-    st.write("---")
-    st.subheader("📊 Generator Sizing Results")
-    
-    # Find largest starting load
-    all_starting_kvas = lift_starting_kvas + fire_starting_kvas
-    largest_starting_kva = max(all_starting_kvas) if all_starting_kvas else 0
-    
-    required_gen, recommended_gen, running_kva, starting_kva = engine.calculate_generator_size(
-        essential_loads, fire_loads, largest_starting_kva
-    )
-    
-    col3, col4, col5 = st.columns(3)
-    with col3:
-        st.metric("Total Running Load", f"{running_kva:.1f} kVA")
-    with col4:
-        st.metric("Worst-Case Starting Load", f"{starting_kva:.1f} kVA")
-    with col5:
-        st.metric("Recommended Generator", f"{recommended_gen:.0f} kVA")
-    
-    st.success(f"✅ **Final Recommendation:** Select a **{recommended_gen:.0f} kVA** generator (Prime Rating)")
-    
-    # Educational note
-    with st.expander("📚 GENERATOR INSTALLATION GUIDE"):
-        st.markdown(engine.get_installer_notes("generator_installation"))
+        st.success(f"✅ **Recommended Generator:** {recommended:.0f} kVA (Prime Rating)")
+        st.info(f"Running Load: {running:.1f} kVA | Starting Load: {starting:.1f} kVA")
 
-# ==================== TAB 6: EARTHING DESIGN ====================
+# ==================== TAB 5: LIGHTNING PROTECTION ====================
+with tab5:
+    st.header("⚡ Lightning Protection System")
+    st.write("---")
+    
+    if st.button("Calculate Lightning Protection", type="primary"):
+        lp = engine.calculate_lightning_protection(
+            building_length, building_width, building_height, protection_level, roof_type
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Building Parameters")
+            st.write(f"Area: {lp['building_area']:.0f} m²")
+            st.write(f"Perimeter: {lp['perimeter']:.0f} m")
+            st.write(f"Protection Level: {protection_level}")
+            st.write(f"Terminal Spacing: {lp['terminal_spacing']} m")
+        
+        with col2:
+            st.subheader("Bill of Materials")
+            st.write(f"Air Terminals: {lp['num_air_terminals']} nos")
+            st.write(f"Down Conductors: {lp['num_down_conductors']} nos")
+            st.write(f"Test Joints: {lp['num_test_joints']} nos")
+            st.write(f"Total Conductor: {lp['total_conductor_length']:.0f} m")
+
+# ==================== TAB 6: CHECKLISTS ====================
 with tab6:
-    st.header("⛓️ Earthing System Design")
+    st.header("📋 Project Checklists")
     st.write("---")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Earth Pit Configuration")
-        
-        has_fuel_tank = st.checkbox("Separate Fuel Tank Present", value=True, key="earth_has_fuel")
-        soil_condition = st.selectbox("Soil Condition", ["Normal", "Poor (High Resistance)"], key="earth_soil")
-        building_area = building_length * building_width
-        
-        st.info(f"**Building Area:** {building_area:.0f} m²")
-        
-        earth_pits = engine.calculate_earth_pits(has_fuel_tank, soil_condition, building_area, protection_level)
-        
-        st.write("**Recommended Earth Pits:**")
-        st.write(f"- Generator Body/Neutral: **{earth_pits['generator_body']} pits**")
-        if earth_pits['fuel_tank'] > 0:
-            st.write(f"- Fuel Tank: **{earth_pits['fuel_tank']} pit**")
-        st.write(f"- Lightning Protection: **{earth_pits['lightning_protection']} pits**")
-        st.write(f"**Total Earth Pits Required: {earth_pits['total_recommended']}**")
-        
-        # Earth pit specification
-        st.subheader("🔧 Earth Pit Specification")
-        st.markdown("""
-        **Standard Earth Pit Requirements:**
-        - Depth: Minimum 3 meters
-        - Electrode: Copper-clad steel rod (20mm diameter)
-        - Backfill: Bentonite mix
-        - Cover: Heavy-duty cast iron with lock
-        - Test link: Removable link
-        """)
+        st.subheader("📐 DESIGN CHECKLIST")
+        st.checkbox("Load assessment completed")
+        st.checkbox("Cable sizing with voltage drop")
+        st.checkbox("Protection coordination study")
+        st.checkbox("Earthing system designed")
+        st.checkbox("Lightning protection designed")
+        st.checkbox("Emergency lighting designed")
+        st.checkbox("Room-by-room load calculated")
+        st.checkbox("Fan/ventilation requirements")
     
     with col2:
-        st.subheader("Test Link Point Requirements")
-        
-        st.markdown("""
-        **Test Link Configuration:**
-        - Install **bolted removable link** in main earthing conductor
-        - Location: Between generator neutral and main earth
-        - Purpose: Allows isolation for earth resistance testing
-        - Rating: Copper link rated for fault current
-        """)
-        
-        st.warning("**⚠️ Important Safety Notes:**")
-        st.markdown("""
-        - Test link must be accessible only to authorized personnel
-        - Clear labeling required
-        - Include in maintenance schedule
-        """)
-        
-        # Earth resistance requirements
-        st.subheader("📊 Earth Resistance Targets")
-        resistance_data = {
-            "System": ["Generator Neutral", "Lightning Protection", "Fuel Tank", "Combined System"],
-            "Max Ω": ["1 Ω", "10 Ω", "10 Ω", "1 Ω"]
-        }
-        st.table(resistance_data)
-    
-    # Educational note
-    with st.expander("📚 EARTHING INSTALLATION GUIDE"):
-        st.markdown(engine.get_installer_notes("earth_system"))
+        st.subheader("🔧 INSTALLATION CHECKLIST")
+        st.checkbox("Site inspection done")
+        st.checkbox("Material delivery verified")
+        st.checkbox("Cable routes marked")
+        st.checkbox("Earth pits installed")
+        st.checkbox("Lightning protection installed")
+        st.checkbox("Testing completed")
+        st.checkbox("As-built drawings prepared")
+        st.checkbox("O&M manuals submitted")
 
-# ==================== TAB 7: LIGHTNING PROTECTION ====================
-with tab7:
-    st.header("⚡ Lightning Protection System Design")
-    st.write("Compliant with SS 555 / IEC 62305")
-    st.write("---")
-    
-    # Calculate lightning protection requirements
-    lp_results = engine.calculate_lightning_protection(
-        building_length, building_width, building_height, 
-        protection_level, roof_type
-    )
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📐 Building Parameters")
-        st.write(f"- Dimensions: {building_length}m L × {building_width}m W × {building_height}m H")
-        st.write(f"- Area: {lp_results['building_area']:.0f} m²")
-        st.write(f"- Perimeter: {lp_results['perimeter']:.0f} m")
-        st.write(f"- Protection Level: {protection_level}")
-        
-        st.subheader("🎯 Protection Parameters")
-        st.write(f"- Protection Angle: {lp_results['protection_angle']}°")
-        st.write(f"- Mesh Size: {lp_results['mesh_size']}m")
-        st.write(f"- Rolling Sphere Radius: {lp_results['rolling_sphere_radius']}m")
-        st.write(f"- Terminal Spacing: {lp_results['terminal_spacing']}m")
-    
-    with col2:
-        st.subheader("📋 Bill of Materials")
-        
-        lp_data = {
-            "Component": [
-                "Air Terminals",
-                "Down Conductors",
-                "Test Joints",
-                "Roof Conductor",
-                "Down Conductor Length",
-                "Total Conductor"
-            ],
-            "Quantity": [
-                f"{lp_results['num_air_terminals']} nos",
-                f"{lp_results['num_down_conductors']} nos",
-                f"{lp_results['num_test_joints']} nos",
-                f"{lp_results['roof_conductor_length']:.0f} m",
-                f"{lp_results['down_conductor_length']:.0f} m",
-                f"{lp_results['total_conductor_length']:.0f} m"
-            ]
-        }
-        st.table(lp_data)
-    
-    # Installation guidelines
-    st.subheader("📍 Installation Guidelines")
-    
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        st.write("**Air Terminals:**")
-        st.markdown(f"""
-        - Quantity: **{lp_results['num_air_terminals']}** terminals
-        - Spacing: **{lp_results['terminal_spacing']}m** between terminals
-        - Height: Minimum 0.5m above roof
-        - Material: Copper or aluminum (16mm ø min)
-        """)
-    
-    with col4:
-        st.write("**Down Conductors:**")
-        st.markdown(f"""
-        - Quantity: **{lp_results['num_down_conductors']}** conductors
-        - Spacing: Maximum 20m along perimeter
-        - Routing: Straightest path to earth
-        - Protection: In PVC conduit up to 2m height
-        """)
-    
-    # Educational note
-    with st.expander("📚 LIGHTNING PROTECTION INSTALLATION GUIDE"):
-        st.markdown(engine.get_installer_notes("lightning_protection"))
-
-# ==================== TAB 8: EMERGENCY LIGHTING ====================
-with tab8:
-    st.header("💡 Emergency Lighting Design")
-    st.write("Compliant with SS 563 & Fire Code")
-    st.write("---")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Lighting Inventory")
-        
-        total_lights = st.number_input("Total Number of Light Fittings", min_value=1, value=200, key="emergency_total_lights")
-        
-        st.write("**Connection Strategy:**")
-        escape_percent = st.slider("Escape Route Lights (% to connect)", 0, 100, 100, key="emergency_escape_percent")
-        general_percent = st.slider("General Area Lights (% to connect)", 0, 100, 30, key="emergency_general_percent")
-        
-        emergency_calc = engine.calculate_emergency_lights(total_lights, escape_percent, general_percent)
-        
-        st.write("**Results:**")
-        st.write(f"- Escape Route Lights: **{emergency_calc['escape_route_lights']}**")
-        st.write(f"- General Area Lights: **{emergency_calc['general_area_lights']}**")
-        st.write(f"- Exit Signs: **{emergency_calc['exit_signs']}**")
-        st.write(f"- **Total Emergency Lights: {emergency_calc['total_emergency_lights']}**")
-        
-        st.metric("Emergency Lighting Load", f"{emergency_calc['emergency_load_watts']/1000:.2f} kW")
-    
-    with col2:
-        st.subheader("Connection Requirements")
-        
-        st.markdown("""
-        **Connection Methods:**
-        
-        1. **Dedicated Emergency Busbar**
-           - All emergency lights on dedicated section
-           - Auto-transfer to generator
-        
-        2. **Contactor Control**
-           - Selected circuits switched to generator
-           - More economical for large installations
-        
-        **Design Checklist:**
-        """)
-        
-        st.checkbox("Emergency lights on separate circuits", value=True, disabled=True, key="emergency_check1")
-        st.checkbox("Exit signs maintained (always on)", value=True, disabled=True, key="emergency_check2")
-        st.checkbox("Minimum 1 lux on escape routes", value=True, disabled=True, key="emergency_check3")
-        st.checkbox("Test facilities provided", value=True, disabled=True, key="emergency_check4")
-        st.checkbox("Green dot marking on fittings", value=True, disabled=True, key="emergency_check5")
-        
-        st.info("ℹ️ Comply with SS 563 & Fire Code requirements")
-
-# ==================== TAB 9: PROJECT CHECKLISTS ====================
-with tab9:
-    st.header("📋 Complete Project Checklists")
-    st.write("Use these checklists to ensure nothing is missed")
-    st.write("---")
-    
-    design_checklist = engine.generate_design_checklist()
-    install_checklist = engine.generate_installation_checklist()
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📐 DESIGN STAGE CHECKLIST")
-        for category, items in design_checklist.items():
-            with st.expander(f"### {category}"):
-                for item in items:
-                    st.checkbox(item, key=f"design_{category}_{item}")
-    
-    with col2:
-        st.subheader("🔧 INSTALLATION STAGE CHECKLIST")
-        for category, items in install_checklist.items():
-            with st.expander(f"### {category}"):
-                for item in items:
-                    st.checkbox(item, key=f"install_{category}_{item}")
-    
-    # Documentation requirements
-    st.divider()
-    st.subheader("📸 Required Documentation")
-    
-    doc_col1, doc_col2, doc_col3 = st.columns(3)
-    
-    with doc_col1:
-        st.markdown("""
-        **Design Documents:**
-        - Single line diagrams
-        - Load schedules
-        - Cable schedules
-        - Equipment specifications
-        - Protection studies
-        - Voltage drop calcs
-        """)
-    
-    with doc_col2:
-        st.markdown("""
-        **Installation Records:**
-        - Method statements
-        - Risk assessments
-        - Material certificates
-        - Site photos
-        - Inspection reports
-        - Test reports
-        """)
-    
-    with doc_col3:
-        st.markdown("""
-        **As-Built Documents:**
-        - Updated single line diagrams
-        - Equipment manuals
-        - Warranty certificates
-        - Commissioning reports
-        - Maintenance schedules
-        """)
-
-# ==================== TAB 10: MAINTENANCE & TROUBLESHOOTING ====================
-with tab10:
-    st.header("🛠️ Maintenance & Troubleshooting")
-    st.write("---")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📅 Maintenance Schedule")
-        maintenance = engine.generate_maintenance_checklist()
-        
-        for period, tasks in maintenance.items():
-            with st.expander(f"### {period.upper()} Tasks"):
-                for task in tasks:
-                    st.checkbox(task, key=f"maint_{period}_{task}")
-        
-        # Maintenance log
-        st.subheader("📝 Maintenance Log")
-        st.text_area("Record maintenance activities:", height=100, key="maint_log")
-        st.date_input("Next scheduled maintenance", key="maint_date")
-    
-    with col2:
-        st.subheader("🔍 Troubleshooting Guide")
-        troubleshooting = engine.generate_troubleshooting_guide()
-        
-        for category, issues in troubleshooting.items():
-            with st.expander(f"### {category}"):
-                for issue, steps in issues.items():
-                    st.write(f"**{issue}:**")
-                    for step in steps:
-                        st.write(f"- {step}")
-        
-        # Emergency contacts
-        st.subheader("📞 Emergency Contacts")
-        st.markdown("""
-        - **Generator Service:** [Insert Contact]
-        - **Switchgear Specialist:** [Insert Contact]
-        - **Fire Alarm/Pump Service:** [Insert Contact]
-        - **SP Group (Emergency):** 1800 778 8888
-        - **SCDF (Emergency):** 995
-        """)
-
-# ==================== FOOTER ====================
+# Footer
 st.divider()
-st.markdown("""
-**⚠️ IMPORTANT NOTES FOR INSTALLERS:**
-
-1. **Always verify site conditions** before installation
-2. **Follow SS 638** for all electrical installations
-3. **Use calibrated test equipment** for all measurements
-4. **Document everything** - photos, test results, as-built drawings
-5. **Safety first** - use proper PPE, follow LOTO procedures
-6. **Engage professional engineers** for final design approval
-7. **Submit for inspections** before covering/cabling
-
-**For Junior Engineers:** Study the educational notes in each section. Understanding the WHY is as important as the HOW.
-
-**For Installers:** Use the checklists and follow the step-by-step guides. Quality installation prevents future problems.
-""")
-
-st.caption("© Singapore Electrical Design Professional - Version 2.0 | Compliant with SS 638:2024, SS 555, SP Group Requirements")
+st.caption("© Singapore Electrical Design Professional - Complete Room Design Tool | Compliant with SS 638, SS 531, SS 553")
