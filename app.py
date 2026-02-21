@@ -1,121 +1,85 @@
 import streamlit as st
-import pandas as pd
+import pandas
 import math
 
-# --- APP CONFIG ---
-st.set_page_config(page_title="Pro Electrical Suite & Estimator", layout="wide")
-st.title("⚡ All-in-One Electrical Design & Costing Suite")
+# --- LOGIC ENGINE ---
+class SingaporeElectricalLogic:
+    def __init__(self):
+        self.standard_breakers = [6, 10, 16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000]
 
-# --- BUDGETARY UNIT COSTS (Estimated - User can adjust) ---
-st.sidebar.header("💰 Budgetary Unit Costs")
-cost_per_kva_gen = st.sidebar.number_input("Generator ($/kVA)", value=250)
-cost_per_amp_mccb = st.sidebar.number_input("Main Breaker ($/Amp)", value=5.0)
-cost_per_sqmm_m = st.sidebar.number_input("Cable ($/mm²/meter)", value=0.15)
-cost_per_earth_pit = st.sidebar.number_input("Earth Pit ($/unit)", value=450)
-cost_per_mcb = st.sidebar.number_input("10A MCB ($/unit)", value=15.0)
+    def get_design_current(self, kw, phase, voltage, pf):
+        if phase == "1-Phase":
+            return (kw * 1000) / (voltage * pf)
+        return (kw * 1000) / (math.sqrt(3) * voltage * pf)
 
-# --- DATA DICTIONARIES ---
-CABLE_SPECS = {1.5: (23, 25.0), 2.5: (31, 15.0), 4: (42, 9.5), 6: (54, 6.4), 10: (75, 3.8), 16: (100, 2.4), 25: (133, 1.5), 35: (164, 1.1), 50: (198, 0.8), 70: (253, 0.57)}
-STANDARD_GENS = [20, 30, 45, 60, 80, 100, 125, 150, 200, 250, 300, 400, 500, 750, 1000]
+    def get_breaker(self, ib):
+        for size in self.standard_breakers:
+            if size >= ib: return size
+        return None
 
-# --- TABS ---
-tab1, tab2, tab3, tab4 = st.tabs(["🏗️ Cable & Breaker", "🔋 Generator & Essential", "🌍 Earthing", "💡 Lighting"])
+    def get_protection_logic(self, load_type, breaker_size):
+        if any(x in load_type.lower() for x in ["socket", "wet", "heater"]):
+            return "30mA RCCB/RCBO (Mandatory - Human Protection)", "Type A or AC"
+        if breaker_size > 63:
+            return "ELR + ZCT (Earth Leakage Relay with Shunt Trip)", "Adjustable (e.g., 0.5A - 3A)"
+        return "100mA/300mA RCCB (Fire Protection)", "Type AC"
 
-# --- TAB 1: CABLE & BREAKER ---
-with tab1:
-    st.header("Cable & Breaker Design")
-    load_kva = st.number_input("Design Load (kVA)", value=100.0)
-    voltage = st.selectbox("Voltage (V)", [415, 400, 230])
-    length = st.number_input("Cable Length (m)", value=50)
+# --- STREAMLIT UI ---
+st.set_page_config(page_title="SG Electrical Design Pro", layout="wide")
+
+st.title("⚡ SG Electrical Design Tool (SS 638 & SP Grid)")
+st.markdown("Automated compliance tool for Singapore Power Grid standards.")
+
+with st.sidebar:
+    st.header("Input Parameters")
+    load_kw = st.number_input("Total Load (kW)", min_value=0.1, value=10.0)
+    phase = st.selectbox("Phase System", ["1-Phase", "3-Phase"], index=1)
+    voltage = 230 if phase == "1-Phase" else 400
+    pf = st.slider("Power Factor", 0.7, 1.0, 0.85)
+    load_category = st.selectbox("Load Application", 
+                                ["General Lighting/Power", "13A Sockets / Wet Area", "Main Switchboard (Incomer)", "Sub-Main Feeder"])
+
+# Calculations
+logic = SingaporeElectricalLogic()
+ib = logic.get_design_current(load_kw, phase, voltage, pf)
+in_breaker = logic.get_breaker(ib)
+
+# 1. Breaker Type Selection
+if in_breaker <= 63:
+    b_type = "MCB (Miniature Circuit Breaker)"
+elif in_breaker < 800:
+    b_type = "MCCB (Molded Case Circuit Breaker)"
+else:
+    b_type = "ACB (Air Circuit Breaker)"
+
+# 2. Protection & Metering Logic
+prot_device, prot_sens = logic.get_protection_logic(load_category, in_breaker)
+meter_type = "Whole Current (WC) Meter" if in_breaker <= 100 else "CT Metering"
+meter_loc = "Before Main Switch (Meter Riser/Panel)" if in_breaker <= 100 else "Inside MSB (Dedicated CT Compartment)"
+
+# --- DISPLAY RESULTS ---
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("📋 Design Summary")
+    st.metric("Design Current ($I_b$)", f"{ib:.2f} A")
+    st.metric("Suggested Breaker Size ($I_n$)", f"{in_breaker} A")
+    st.info(f"**Selected Breaker Type:** {b_type}")
+
+with col2:
+    st.subheader("🛡️ Protection & Compliance")
+    st.success(f"**Earth Leakage:** {prot_device}")
+    st.warning(f"**Sensitivity:** {prot_sens}")
     
-    ib = (load_kva * 1000) / (1.732 * voltage)
-    in_rating = ib * 1.25
-    
-    # Selection Logic
-    final_sqmm = 1.5
-    for sqmm, (cap, mv) in CABLE_SPECS.items():
-        if cap > in_rating:
-            if ((mv * ib * length) / 1000 / voltage) * 100 <= 3.0:
-                final_sqmm = sqmm
-                break
-
-    breaker_cost = in_rating * cost_per_amp_mccb
-    cable_cost = final_sqmm * length * cost_per_sqmm_m
-    st.success(f"Cable: {final_sqmm}mm² | Breaker: {round(in_rating)}A")
-
-# --- TAB 2: GENERATOR & ESSENTIAL SERVICES ---
-with tab2:
-    st.header("Emergency Power & Life Safety")
-    colA, colB = st.columns(2)
-    with colA:
-        lift = st.checkbox("Lift Homing (Essential)", value=True)
-        elights = st.checkbox("Emergency Lighting (Essential)", value=True)
-    with colB:
-        firepump = st.checkbox("Fire Pump (Essential)", value=False)
-    
-    essential_kva = (15.0 if lift else 0) + (5.0 if elights else 0) + (45.0 if firepump else 0)
-    peak_kva = essential_kva * 1.5 # Avg Inrush
-    recommended_gen = next((x for x in STANDARD_GENS if x >= peak_kva), 1000)
-    
-    gen_cost = recommended_gen * cost_per_kva_gen
-    st.metric("Recommended Generator", f"{recommended_gen} kVA", f"${gen_cost:,.0f}")
-
-
-
-# --- TAB 3: EARTHING ---
-with tab3:
-    st.header("Earthing Design")
-    pits = st.slider("Number of Earth Pits", 1, 10, 2)
-    earth_cost = pits * cost_per_earth_pit
-    st.metric("Earthing Total", f"{pits} Pits", f"${earth_cost:,.0f}")
-
-# --- TAB 4: LIGHTING ---
-with tab4:
-    st.header("Final Circuit Distribution")
-    total_watts = st.number_input("Total Light Wattage", value=3000)
-    num_circuits = math.ceil(total_watts / 1000)
-    lighting_cost = num_circuits * cost_per_mcb
-    st.metric("Lighting Circuits", f"{num_circuits} MCBs", f"${lighting_cost:,.0f}")
-
-# --- SUMMARY & REPORT ---
 st.divider()
-total_project_cost = breaker_cost + cable_cost + gen_cost + earth_cost + lighting_cost
 
-col_sum1, col_sum2 = st.columns([2,1])
-with col_sum1:
-    st.subheader("📋 Integrated Project Report")
-    report_text = f"""
-PROJECT SUMMARY REPORT
------------------------------------
-1. MAIN POWER:
-   - Breaker: {round(in_rating)}A MCCB
-   - Cable: {final_sqmm}mm² x {length}m
-   - Estimated Sub-Total: ${breaker_cost + cable_cost:,.2f}
+st.subheader("📊 Singapore Power (SP) Metering Requirements")
+st.write(f"Based on your load of **{in_breaker}A**, the following SP Group guidelines apply:")
 
-2. EMERGENCY SYSTEM:
-   - Essential Load: {essential_kva} kVA
-   - Generator: {recommended_gen} kVA Standby
-   - Estimated Sub-Total: ${gen_cost:,.2f}
+table_data = {
+    "Requirement": ["Meter Type", "Meter Location", "Standard Reference"],
+    "Details": [meter_type, meter_loc, "SP Group Metering Handbook / SS 638"]
+}
+st.table(table_data)
 
-3. INFRASTRUCTURE:
-   - Earth Pits: {pits} units
-   - Lighting Circuits: {num_circuits} nos
-   - Estimated Sub-Total: ${earth_cost + lighting_cost:,.2f}
-
-TOTAL ESTIMATED BUDGET: ${total_project_cost:,.2f}
------------------------------------
-    """
-    st.text_area("Report Preview", report_text, height=300)
-
-with col_sum2:
-    st.subheader("Budget Allocation")
-    # Simple chart logic
-    chart_data = pd.DataFrame({
-        'Category': ['Power', 'Gen-Set', 'Infra'],
-        'Cost': [breaker_cost + cable_cost, gen_cost, earth_cost + lighting_cost]
-    })
-    st.bar_chart(chart_data.set_index('Category'))
-
-
-
-st.download_button("📥 Download Full Report", report_text, "Electrical_Project_Report.txt")
+st.caption("Note: Always verify with a Licensed Electrical Worker (LEW) for final submission.")
