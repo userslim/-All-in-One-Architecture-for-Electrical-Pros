@@ -1037,6 +1037,38 @@ with st.sidebar:
     
     st.markdown("---")
     st.info("Compliant with SS 638, SS 531, SS 555")
+    
+    # ==================== PAYPAL DONATION SECTION ====================
+    st.markdown("---")
+    st.markdown("### ☕ Support Development")
+    st.markdown("If you find this tool useful, consider supporting continued development:")
+    
+    # PayPal donation button
+    paypal_url = "https://www.paypal.com/ncp/payment/C9S8JD4XC6F4E"
+    
+    # Create a styled donation button
+    st.markdown(
+        f"""
+        <div style="display: flex; justify-content: center; margin: 20px 0;">
+            <a href="{paypal_url}" target="_blank">
+                <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" 
+                     alt="Donate with PayPal" 
+                     style="border: none; cursor: pointer; width: 150px;">
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Alternative text link
+    st.markdown(f"[💰 Click here to donate via PayPal]({paypal_url})")
+    
+    # Thank you message
+    st.markdown("🙏 Thank you for your support!")
+    
+    st.markdown("---")
+    st.markdown("**Version:** 3.0")
+    st.markdown("**Last Updated:** 2024")
 
 # Main tabs
 tabs = st.tabs([
@@ -1480,4 +1512,11 @@ with tabs[7]:
 
 # Footer
 st.markdown("---")
-st.caption("© SG Electrical Design Pro | Compliant with Singapore Standards SS 638, SS 531, SS 555 | Version 3.0")
+col_footer1, col_footer2, col_footer3 = st.columns([1, 2, 1])
+with col_footer2:
+    st.markdown("""
+    <div style="text-align: center">
+        <p>© SG Electrical Design Pro | Compliant with Singapore Standards SS 638, SS 531, SS 555 | Version 3.0</p>
+        <p style="font-size: 12px;">Made with ❤️ for the electrical engineering community</p>
+    </div>
+    """, unsafe_allow_html=True)
