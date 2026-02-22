@@ -488,6 +488,20 @@ class SGProEngine:
             "Level IV": {"low": 12, "medium": 10, "high": 6}
         }
         
+        # ==================== EV CHARGER CONFIGURATION ====================
+        self.ev_charger_config = {
+            "percentage_requirement": 15,  # 15% of total lots
+            "power_per_charger_kw": 7.0,   # 7kW per charger (typical for AC charging)
+            "charger_types": {
+                "AC Level 2": {"power": 7, "voltage": 230, "phases": 1, "current": 32},
+                "AC Fast": {"power": 22, "voltage": 400, "phases": 3, "current": 32},
+                "DC Fast": {"power": 50, "voltage": 400, "phases": 3, "current": 80}
+            },
+            "diversity_factor": 0.6,  # Not all chargers will be used simultaneously
+            "efficiency": 0.95,  # Charger efficiency
+            "power_factor": 0.98  # Typical for modern EV chargers
+        }
+        
         # ==================== MAINTENANCE & LIFETIME DATA ====================
         self.equipment_lifetime = {
             "LED Lighting": 50000,  # hours
@@ -499,7 +513,9 @@ class SGProEngine:
             "Fan Motor": 10,  # years
             "Pump Motor": 15,  # years
             "Earth Electrode": 15,  # years
-            "Lightning Arrester": 10  # years
+            "Lightning Arrester": 10,  # years
+            "EV Charger": 10,  # years
+            "EV Charger Cable": 5  # years
         }
         
         self.maintenance_templates = {
@@ -511,12 +527,14 @@ class SGProEngine:
             "weekly": [
                 {"task": "Generator run test (30 mins)", "duration_min": 45, "criticality": "High"},
                 {"task": "Battery voltage measurement", "duration_min": 15, "criticality": "Medium"},
-                {"task": "Emergency lighting test", "duration_min": 20, "criticality": "High"}
+                {"task": "Emergency lighting test", "duration_min": 20, "criticality": "High"},
+                {"task": "EV charger visual inspection", "duration_min": 30, "criticality": "Medium"}
             ],
             "monthly": [
                 {"task": "Earth resistance measurement", "duration_min": 60, "criticality": "High"},
                 {"task": "Circuit breaker exercise", "duration_min": 45, "criticality": "Medium"},
-                {"task": "Thermal imaging scan", "duration_min": 90, "criticality": "High"}
+                {"task": "Thermal imaging scan", "duration_min": 90, "criticality": "High"},
+                {"task": "EV charger functional test", "duration_min": 60, "criticality": "Medium"}
             ],
             "quarterly": [
                 {"task": "Insulation resistance test", "duration_min": 180, "criticality": "High"},
@@ -526,7 +544,8 @@ class SGProEngine:
             "annually": [
                 {"task": "Full load generator test", "duration_min": 240, "criticality": "High"},
                 {"task": "Oil and filter change", "duration_min": 120, "criticality": "High"},
-                {"task": "Professional inspection", "duration_min": 480, "criticality": "High"}
+                {"task": "Professional inspection", "duration_min": 480, "criticality": "High"},
+                {"task": "EV charger calibration check", "duration_min": 120, "criticality": "Medium"}
             ]
         }
         
@@ -657,6 +676,59 @@ class SGProEngine:
             "total_load_watts": total_load,
             "current_per_phase": round(current, 1),
             "special_requirements": std["special_requirements"]
+        }
+    
+    def calculate_ev_chargers(self, total_carpark_lots, charger_type="AC Level 2"):
+        """
+        Calculate EV charger requirements based on 15% of total carpark lots
+        Each charger: 7kW as per requirement
+        """
+        # Calculate number of chargers (15% of total lots, rounded up)
+        num_chargers = math.ceil(total_carpark_lots * self.ev_charger_config["percentage_requirement"] / 100)
+        
+        # Get charger specifications
+        charger_spec = self.ev_charger_config["charger_types"].get(charger_type, 
+                                                                   self.ev_charger_config["charger_types"]["AC Level 2"])
+        
+        # Calculate total load
+        total_load_kw = num_chargers * self.ev_charger_config["power_per_charger_kw"]
+        
+        # Apply diversity factor (not all chargers will be in use simultaneously)
+        diversified_load_kw = total_load_kw * self.ev_charger_config["diversity_factor"]
+        
+        # Calculate current requirements
+        if charger_spec["phases"] == 3:
+            current_per_charger = (charger_spec["power"] * 1000) / (math.sqrt(3) * charger_spec["voltage"] * self.ev_charger_config["power_factor"])
+        else:
+            current_per_charger = (charger_spec["power"] * 1000) / (charger_spec["voltage"] * self.ev_charger_config["power_factor"])
+        
+        total_current = current_per_charger * num_chargers * self.ev_charger_config["diversity_factor"]
+        
+        # Calculate number of circuits (assuming 8 chargers per 3-phase circuit max)
+        chargers_per_circuit = 8
+        num_circuits = math.ceil(num_chargers / chargers_per_circuit)
+        
+        return {
+            "total_carpark_lots": total_carpark_lots,
+            "percentage_required": self.ev_charger_config["percentage_requirement"],
+            "num_chargers": num_chargers,
+            "charger_type": charger_type,
+            "power_per_charger_kw": self.ev_charger_config["power_per_charger_kw"],
+            "total_load_kw": round(total_load_kw, 1),
+            "diversified_load_kw": round(diversified_load_kw, 1),
+            "total_current_a": round(total_current, 1),
+            "num_circuits": num_circuits,
+            "chargers_per_circuit": chargers_per_circuit,
+            "diversity_factor": self.ev_charger_config["diversity_factor"],
+            "power_factor": self.ev_charger_config["power_factor"],
+            "efficiency": self.ev_charger_config["efficiency"],
+            "annual_energy_kwh": round(total_load_kw * 8 * 365 * self.ev_charger_config["diversity_factor"], 0),  # Assuming 8 hours usage per day
+            "recommendations": [
+                f"Install {num_circuits} dedicated circuits for EV chargers",
+                "Use Type B RCD for DC leakage protection",
+                "Consider smart charging for load management",
+                "Install energy metering for billing if required"
+            ]
         }
     
     def get_isolators(self, room_type, equipment_list):
@@ -926,7 +998,8 @@ class SGProEngine:
             "LED Lighting": ["Clean fixtures", "Check for flickering", "Verify lux levels"],
             "MCB/MCCB": ["Exercise breakers", "Thermal imaging", "Check for tripping"],
             "Generator": ["Change oil", "Check coolant", "Test under load"],
-            "UPS Battery": ["Load test", "Check electrolyte", "Clean terminals"]
+            "UPS Battery": ["Load test", "Check electrolyte", "Clean terminals"],
+            "EV Charger": ["Check cable condition", "Test emergency stop", "Verify charging performance", "Check thermal imaging"]
         }
         
         recs = base.get(equipment, ["General inspection"])
@@ -999,7 +1072,8 @@ class SGProEngine:
             "recommendations": [
                 "Install smart lighting controls",
                 "Use VFDs for motors",
-                "Schedule heavy loads during off-peak"
+                "Schedule heavy loads during off-peak",
+                "Implement smart EV charging to shift load to off-peak hours"
             ]
         }
     
@@ -1067,7 +1141,7 @@ with st.sidebar:
     st.markdown("🙏 Thank you for your support!")
     
     st.markdown("---")
-    st.markdown("**Version:** 3.0")
+    st.markdown("**Version:** 3.1 (with EV Charger Support)")
     st.markdown("**Last Updated:** 2024")
 
 # Main tabs
@@ -1078,6 +1152,7 @@ tabs = st.tabs([
     "⚡ Lightning",
     "⛓️ Earthing",
     "📊 MSB Design",
+    "🚗 EV Chargers",
     "🛠️ Maintenance",
     "📈 Analytics"
 ])
@@ -1111,6 +1186,8 @@ with tabs[0]:
             with col2:
                 st.subheader("Design Results")
                 
+                total_load = 0
+                
                 # Lighting
                 if include_lighting:
                     st.write("### 💡 Lighting")
@@ -1124,6 +1201,8 @@ with tabs[0]:
                         st.write(f"**Type:** {lighting['fitting_type']}")
                         st.write(f"**Layout:** {lighting['fittings_length']} × {lighting['fittings_width']}")
                         st.write(f"**Color:** {lighting['color_temp']}")
+                        
+                        total_load += lighting['total_watts']
                 
                 # Sockets
                 if include_sockets:
@@ -1137,6 +1216,8 @@ with tabs[0]:
                         
                         st.write(f"**Type:** {sockets['socket_type']}")
                         st.write(f"**Current/Phase:** {sockets['current_per_phase']}A")
+                        
+                        total_load += sockets['total_load_watts']
                 
                 # Fans
                 if include_fans:
@@ -1146,6 +1227,7 @@ with tabs[0]:
                         st.metric("Required Airflow", f"{fans['required_cfm']:.0f} CFM")
                         for fan in fans['recommendations']:
                             st.write(f"**{fan['type']}:** {fan['quantity']} units, {fan['power']}W")
+                            total_load += fan['power']
                 
                 # Isolators
                 st.write("### 🔒 Isolators")
@@ -1158,6 +1240,9 @@ with tabs[0]:
                 isolators = engine.get_isolators(room_type, equipment)
                 for iso in isolators[:3]:  # Show first 3
                     st.write(f"**{iso['equipment']}:** {iso['type']}")
+                
+                # Total Load Summary
+                st.success(f"### 📊 Total Room Load: {total_load/1000:.2f} kW")
 
 # ==================== TAB 2: CABLE & TRAY ====================
 with tabs[1]:
@@ -1401,8 +1486,107 @@ with tabs[5]:
         })
         st.table(clearances)
 
-# ==================== TAB 7: MAINTENANCE ====================
+# ==================== TAB 7: EV CHARGERS ====================
 with tabs[6]:
+    st.header("🚗 EV Charger Infrastructure Design")
+    st.write("Design EV charging stations based on 15% of total carpark lots (7kW per charger)")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("EV Charger Parameters")
+        
+        total_carpark_lots = st.number_input("Total Carpark Lots", 10, 1000, 200, key="ev_total_lots")
+        charger_type = st.selectbox("Charger Type", 
+                                   ["AC Level 2 (7kW)", "AC Fast (22kW)", "DC Fast (50kW)"], 
+                                   key="ev_charger_type")
+        
+        # Map display name to internal type
+        charger_type_map = {
+            "AC Level 2 (7kW)": "AC Level 2",
+            "AC Fast (22kW)": "AC Fast",
+            "DC Fast (50kW)": "DC Fast"
+        }
+        
+        selected_type = charger_type_map[charger_type]
+        
+        # Override power per charger based on selected type
+        if selected_type == "AC Level 2":
+            power_per_charger = 7
+        elif selected_type == "AC Fast":
+            power_per_charger = 22
+        else:
+            power_per_charger = 50
+        
+        st.info(f"**Requirement:** 15% of {total_carpark_lots} lots = {math.ceil(total_carpark_lots * 0.15)} chargers minimum")
+        
+        include_ev = st.checkbox("Include EV Chargers in Load Calculation", True, key="inc_ev")
+        
+        if st.button("Calculate EV Infrastructure", type="primary", key="calc_ev"):
+            with col2:
+                st.subheader("EV Charger Results")
+                
+                # Override the config for this calculation
+                engine.ev_charger_config["power_per_charger_kw"] = power_per_charger
+                
+                ev = engine.calculate_ev_chargers(total_carpark_lots, selected_type)
+                
+                # Key metrics
+                col_ev1, col_ev2, col_ev3 = st.columns(3)
+                col_ev1.metric("EV Chargers Required", ev['num_chargers'])
+                col_ev2.metric("Total Load", f"{ev['total_load_kw']} kW")
+                col_ev3.metric("Diversified Load", f"{ev['diversified_load_kw']} kW")
+                
+                # Detailed results
+                st.write("### 📊 Detailed Analysis")
+                
+                results_df = pd.DataFrame([
+                    ["Number of Chargers", ev['num_chargers']],
+                    ["Power per Charger", f"{ev['power_per_charger_kw']} kW"],
+                    ["Total Connected Load", f"{ev['total_load_kw']} kW"],
+                    ["Diversified Load (60%)", f"{ev['diversified_load_kw']} kW"],
+                    ["Total Current", f"{ev['total_current_a']} A"],
+                    ["Number of Circuits", ev['num_circuits']],
+                    ["Chargers per Circuit", ev['chargers_per_circuit']],
+                    ["Annual Energy Consumption", f"{ev['annual_energy_kwh']:,.0f} kWh"]
+                ], columns=["Parameter", "Value"])
+                
+                st.table(results_df)
+                
+                # Circuit requirements
+                st.write("### 🔌 Circuit Requirements")
+                st.write(f"- **Circuits Needed:** {ev['num_circuits']} × 3-phase circuits")
+                st.write(f"- **Circuit Rating:** 32A minimum (for AC chargers)")
+                st.write(f"- **Cable Size:** 6mm² or 10mm² per charger (depending on distance)")
+                st.write(f"- **Protection:** Type B RCD (30mA) for DC leakage detection")
+                
+                # Load contribution
+                st.write("### ⚡ Load Contribution")
+                st.write(f"**EV Charger Load (Diversified):** {ev['diversified_load_kw']} kW")
+                st.write(f"**EV Charger Load (Peak):** {ev['total_load_kw']} kW")
+                
+                # Recommendations
+                st.write("### 💡 Recommendations")
+                for rec in ev['recommendations']:
+                    st.write(f"- {rec}")
+                
+                # Isolator requirements
+                st.write("### 🔒 Isolator Requirements")
+                st.write("- **Each Charger:** 40A/63A DP Isolator with switch")
+                st.write("- **Location:** Adjacent to charger, accessible")
+                st.write("- **Type:** Weatherproof (IP66) for outdoor installations")
+                
+                # Asset tag
+                tag = engine.generate_asset_tag("EV Charging Station", f"Carpark Level")
+                st.write("### 🏷️ Asset Tag")
+                st.code(f"Asset ID: {tag['asset_id']}")
+                
+                # If included in total load
+                if include_ev:
+                    st.success(f"✅ EV Charger load of {ev['diversified_load_kw']} kW added to building total")
+
+# ==================== TAB 8: MAINTENANCE ====================
+with tabs[7]:
     st.header("Maintenance Management")
     
     col1, col2 = st.columns(2)
@@ -1441,7 +1625,8 @@ with tabs[6]:
         equipment_list = [
             {"type": "Generator", "location": "Gen Room"},
             {"type": "UPS Battery", "location": "Elec Room"},
-            {"type": "MCB/MCCB", "location": "MSB"}
+            {"type": "MCB/MCCB", "location": "MSB"},
+            {"type": "EV Charger", "location": "Carpark"}
         ]
         
         schedule = engine.generate_schedule(equipment_list, datetime.now().strftime("%Y-%m-%d"))
@@ -1455,14 +1640,14 @@ with tabs[6]:
     with col4:
         st.subheader("Asset Tags")
         
-        asset_types = ["Generator", "MSB", "Lighting Panel", "Fire Pump"]
+        asset_types = ["Generator", "MSB", "Lighting Panel", "Fire Pump", "EV Charger"]
         for asset in asset_types:
             tag = engine.generate_asset_tag(asset, "Site")
             st.write(f"**{asset}:** {tag['asset_id']}")
             st.code(tag['qr_data'], language=None)
 
-# ==================== TAB 8: ANALYTICS ====================
-with tabs[7]:
+# ==================== TAB 9: ANALYTICS ====================
+with tabs[8]:
     st.header("Energy Analytics")
     
     col1, col2 = st.columns(2)
@@ -1470,19 +1655,30 @@ with tabs[7]:
     with col1:
         st.subheader("Load Profile")
         
-        # Generate sample data
+        # Generate sample data with EV charging impact
         hours = list(range(24))
-        load = [100 + 50 * math.sin(i/4) + random.uniform(-10, 10) for i in hours]
+        base_load = [100 + 50 * math.sin(i/4) + random.uniform(-10, 10) for i in hours]
         
-        fig = px.line(x=hours, y=load, 
-                     title="Daily Load Profile",
-                     labels={'x': 'Hour', 'y': 'Load (kW)'})
+        # Add EV charging load (assuming 8pm-6am charging)
+        ev_load = [0] * 24
+        for i in range(20, 24):  # 8pm-12am
+            ev_load[i] = 50 * random.uniform(0.5, 1.0)
+        for i in range(0, 6):  # 12am-6am
+            ev_load[i] = 50 * random.uniform(0.3, 0.8)
+        
+        total_load = [base + ev for base, ev in zip(base_load, ev_load)]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=hours, y=base_load, mode='lines', name='Base Load'))
+        fig.add_trace(go.Scatter(x=hours, y=total_load, mode='lines', name='With EV Charging'))
+        fig.update_layout(title="Daily Load Profile with EV Charging",
+                         xaxis_title="Hour", yaxis_title="Load (kW)")
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
         st.subheader("Optimization")
         
-        opt = engine.optimize_energy(load)
+        opt = engine.optimize_energy(total_load)
         
         col_o1, col_o2 = st.columns(2)
         col_o1.metric("Peak Load", f"{opt['peak_load']} kW")
@@ -1509,6 +1705,17 @@ with tabs[7]:
         for k, v in engine.energy_tariffs.items()
     ])
     st.table(tariff_df)
+    
+    # EV Charging specific analytics
+    st.subheader("🚗 EV Charging Analytics")
+    
+    col_ev1, col_ev2, col_ev3 = st.columns(3)
+    with col_ev1:
+        st.metric("EV Energy per Day", "400 kWh")
+    with col_ev2:
+        st.metric("EV Energy per Month", "12,000 kWh")
+    with col_ev3:
+        st.metric("EV Energy Cost (Off-peak)", "$1,800/month")
 
 # Footer
 st.markdown("---")
@@ -1516,7 +1723,8 @@ col_footer1, col_footer2, col_footer3 = st.columns([1, 2, 1])
 with col_footer2:
     st.markdown("""
     <div style="text-align: center">
-        <p>© SG Electrical Design Pro | Compliant with Singapore Standards SS 638, SS 531, SS 555 | Version 3.0</p>
+        <p>© SG Electrical Design Pro | Compliant with Singapore Standards SS 638, SS 531, SS 555 | Version 3.1</p>
         <p style="font-size: 12px;">Made with ❤️ for the electrical engineering community</p>
+        <p style="font-size: 12px;">🚗 EV Charger calculations based on 15% requirement (7kW per charger)</p>
     </div>
     """, unsafe_allow_html=True)
