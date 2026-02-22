@@ -834,7 +834,7 @@ class SGProEngine:
                 cable_details.append({
                     "size": cable_size,
                     "diameter": diameter,
-                    "area": area
+                    "area": round(area, 0)
                 })
         
         # Apply spare and fill factor
@@ -1028,12 +1028,12 @@ with st.sidebar:
     st.markdown("---")
     
     st.subheader("Project Info")
-    project = st.text_input("Project Name", "My Building")
-    location = st.text_input("Location", "Singapore")
+    project = st.text_input("Project Name", "My Building", key="project_name")
+    location = st.text_input("Location", "Singapore", key="project_location")
     
     st.markdown("---")
     st.subheader("User Role")
-    role = st.selectbox("Select Role", ["Installer", "Engineer", "Facility Manager"])
+    role = st.selectbox("Select Role", ["Installer", "Engineer", "Facility Manager"], key="user_role")
     
     st.markdown("---")
     st.info("Compliant with SS 638, SS 531, SS 555")
@@ -1059,23 +1059,23 @@ with tabs[0]:
     with col1:
         st.subheader("Room Parameters")
         
-        room_type = st.selectbox("Room Type", list(engine.lighting_standards.keys()))
+        room_type = st.selectbox("Room Type", list(engine.lighting_standards.keys()), key="room_type_tab1")
         
         col_dim1, col_dim2, col_dim3 = st.columns(3)
         with col_dim1:
-            length = st.number_input("Length (m)", 1.0, 50.0, 10.0)
+            length = st.number_input("Length (m)", 1.0, 50.0, 10.0, key="room_length")
         with col_dim2:
-            width = st.number_input("Width (m)", 1.0, 50.0, 8.0)
+            width = st.number_input("Width (m)", 1.0, 50.0, 8.0, key="room_width")
         with col_dim3:
-            height = st.number_input("Height (m)", 2.0, 20.0, 3.0)
+            height = st.number_input("Height (m)", 2.0, 20.0, 3.0, key="room_height")
         
-        ac_status = st.radio("AC Status", ["Air Conditioned", "Non-AC"])
+        ac_status = st.radio("AC Status", ["Air Conditioned", "Non-AC"], key="ac_status")
         
-        include_lighting = st.checkbox("Include Lighting", True)
-        include_sockets = st.checkbox("Include Sockets", True)
-        include_fans = st.checkbox("Include Fans", True)
+        include_lighting = st.checkbox("Include Lighting", True, key="inc_lighting")
+        include_sockets = st.checkbox("Include Sockets", True, key="inc_sockets")
+        include_fans = st.checkbox("Include Fans", True, key="inc_fans")
         
-        if st.button("Calculate Room Design", type="primary"):
+        if st.button("Calculate Room Design", type="primary", key="calc_room"):
             with col2:
                 st.subheader("Design Results")
                 
@@ -1136,23 +1136,24 @@ with tabs[1]:
     with col1:
         st.subheader("Voltage Drop Calculator")
         
-        cable_size = st.selectbox("Cable Size (mm²)", list(engine.cable_impedance.keys()))
-        current = st.number_input("Load Current (A)", 1.0, 1000.0, 100.0)
-        distance = st.number_input("Cable Length (m)", 1.0, 500.0, 50.0)
-        pf = st.slider("Power Factor", 0.7, 1.0, 0.85)
+        cable_size = st.selectbox("Cable Size (mm²)", list(engine.cable_impedance.keys()), key="vd_cable_size")
+        current = st.number_input("Load Current (A)", 1.0, 1000.0, 100.0, key="vd_current")
+        distance = st.number_input("Cable Length (m)", 1.0, 500.0, 50.0, key="vd_distance")
+        pf = st.slider("Power Factor", 0.7, 1.0, 0.85, key="vd_pf")
         
-        if st.button("Calculate Voltage Drop"):
+        if st.button("Calculate Voltage Drop", key="calc_vd"):
             vd, vd_pct = engine.calculate_voltage_drop(cable_size, current, distance, pf)
             
             with col2:
                 st.subheader("Results")
-                st.metric("Voltage Drop", f"{vd}V")
-                st.metric("Percentage", f"{vd_pct}%")
-                
-                if vd_pct <= 4:
-                    st.success("✅ Within acceptable limit (4%)")
-                else:
-                    st.error("❌ Exceeds 4% limit - use larger cable")
+                if vd is not None:
+                    st.metric("Voltage Drop", f"{vd}V")
+                    st.metric("Percentage", f"{vd_pct}%")
+                    
+                    if vd_pct <= 4:
+                        st.success("✅ Within acceptable limit (4%)")
+                    else:
+                        st.error("❌ Exceeds 4% limit - use larger cable")
     
     st.divider()
     
@@ -1161,24 +1162,24 @@ with tabs[1]:
     with col3:
         st.subheader("Cable Tray Sizing")
         
-        num_cables = st.number_input("Number of Cable Types", 1, 5, 2)
+        num_cables = st.number_input("Number of Cable Types", 1, 5, 2, key="tray_num_cables")
         cables = []
         
         for i in range(num_cables):
             col_c, col_q = st.columns(2)
             with col_c:
-                size = st.selectbox(f"Cable {i+1} Size", list(engine.cable_diameters.keys()), key=f"cable_{i}")
+                size = st.selectbox(f"Cable {i+1} Size", list(engine.cable_diameters.keys()), key=f"tray_cable_{i}")
             with col_q:
-                qty = st.number_input(f"Qty {i+1}", 1, 100, 3, key=f"qty_{i}")
+                qty = st.number_input(f"Qty {i+1}", 1, 100, 3, key=f"tray_qty_{i}")
             
             for _ in range(qty):
                 cables.append(size)
         
-        tray_depth = st.selectbox("Tray Depth (mm)", [50, 75, 100, 150])
-        tray_type = st.selectbox("Tray Type", ["perforated", "ladder", "solid"])
-        spare = st.slider("Spare Capacity %", 0, 50, 25) / 100
+        tray_depth = st.selectbox("Tray Depth (mm)", [50, 75, 100, 150], key="tray_depth")
+        tray_type = st.selectbox("Tray Type", ["perforated", "ladder", "solid"], key="tray_type")
+        spare = st.slider("Spare Capacity %", 0, 50, 25, key="tray_spare") / 100
         
-        if st.button("Size Tray"):
+        if st.button("Size Tray", key="calc_tray"):
             result = engine.calculate_tray(cables, tray_depth, tray_type, spare)
             
             with col4:
@@ -1202,31 +1203,31 @@ with tabs[2]:
     with col1:
         st.subheader("Essential Loads")
         
-        num_lifts = st.number_input("Number of Lifts", 0, 10, 2)
+        num_lifts = st.number_input("Number of Lifts", 0, 10, 2, key="gen_num_lifts")
         essential = []
         starting = []
         
         for i in range(num_lifts):
-            lift_kw = st.number_input(f"Lift {i+1} (kW)", 0.0, 100.0, 10.0, key=f"lift_{i}")
+            lift_kw = st.number_input(f"Lift {i+1} (kW)", 0.0, 100.0, 10.0, key=f"gen_lift_{i}")
             running = lift_kw / 0.85  # Approx kVA
             essential.append(running)
             starting.append(running * 2.5)  # Starting multiplier
         
-        num_ess = st.number_input("Other Essential Loads", 0, 10, 2)
+        num_ess = st.number_input("Other Essential Loads", 0, 10, 2, key="gen_num_ess")
         for i in range(num_ess):
-            load = st.number_input(f"Essential Load {i+1} (kVA)", 0.0, 100.0, 5.0, key=f"ess_{i}")
+            load = st.number_input(f"Essential Load {i+1} (kVA)", 0.0, 100.0, 5.0, key=f"gen_ess_{i}")
             essential.append(load)
     
     with col2:
         st.subheader("Fire Loads")
         
-        has_pump = st.checkbox("Include Fire Pump", True)
+        has_pump = st.checkbox("Include Fire Pump", True, key="gen_has_pump")
         fire = []
         fire_start = []
         
         if has_pump:
-            pump_kw = st.number_input("Fire Pump (kW)", 0.0, 200.0, 30.0)
-            pump_type = st.selectbox("Starting Type", ["Direct Online", "Star-Delta", "Soft Starter"])
+            pump_kw = st.number_input("Fire Pump (kW)", 0.0, 200.0, 30.0, key="gen_pump_kw")
+            pump_type = st.selectbox("Starting Type", ["Direct Online", "Star-Delta", "Soft Starter"], key="gen_pump_type")
             
             running = pump_kw / 0.85
             multiplier = {"Direct Online": 6.0, "Star-Delta": 3.5, "Soft Starter": 2.5}[pump_type]
@@ -1234,14 +1235,14 @@ with tabs[2]:
             fire.append(running)
             fire_start.append(running * multiplier)
         
-        num_fans = st.number_input("Pressurization Fans", 0, 10, 2)
+        num_fans = st.number_input("Pressurization Fans", 0, 10, 2, key="gen_num_fans")
         for i in range(num_fans):
-            fan_kw = st.number_input(f"Fan {i+1} (kW)", 0.0, 50.0, 5.5, key=f"fan_{i}")
+            fan_kw = st.number_input(f"Fan {i+1} (kW)", 0.0, 50.0, 5.5, key=f"gen_fan_{i}")
             running = fan_kw / 0.85
             fire.append(running)
             fire_start.append(running * 3.0)  # Fan starting
     
-    if st.button("Size Generator"):
+    if st.button("Size Generator", key="calc_gen"):
         all_start = starting + fire_start
         largest = max(all_start) if all_start else 0
         
@@ -1263,13 +1264,13 @@ with tabs[3]:
     with col1:
         st.subheader("Building Parameters")
         
-        b_length = st.number_input("Length (m)", 1.0, 200.0, 50.0)
-        b_width = st.number_input("Width (m)", 1.0, 200.0, 30.0)
-        b_height = st.number_input("Height (m)", 1.0, 100.0, 15.0)
-        b_roof = st.selectbox("Roof Type", ["Flat", "Pitched"])
-        b_level = st.selectbox("Protection Level", ["Level I", "Level II", "Level III", "Level IV"], index=2)
+        b_length = st.number_input("Length (m)", 1.0, 200.0, 50.0, key="lp_length")
+        b_width = st.number_input("Width (m)", 1.0, 200.0, 30.0, key="lp_width")
+        b_height = st.number_input("Height (m)", 1.0, 100.0, 15.0, key="lp_height")
+        b_roof = st.selectbox("Roof Type", ["Flat", "Pitched"], key="lp_roof")
+        b_level = st.selectbox("Protection Level", ["Level I", "Level II", "Level III", "Level IV"], index=2, key="lp_level")
         
-        if st.button("Calculate Lightning Protection"):
+        if st.button("Calculate Lightning Protection", key="calc_lp"):
             lp = engine.calculate_lightning(b_length, b_width, b_height, b_level, b_roof)
             
             with col2:
@@ -1294,12 +1295,12 @@ with tabs[4]:
     with col1:
         st.subheader("Earth Pit Calculation")
         
-        b_area = st.number_input("Building Area (m²)", 1.0, 10000.0, 1500.0)
-        has_fuel = st.checkbox("Has Fuel Tank", True)
-        soil = st.selectbox("Soil Condition", ["Normal", "Poor"])
-        level = st.selectbox("Protection Level", ["Level I", "Level II", "Level III", "Level IV"], index=2)
+        b_area = st.number_input("Building Area (m²)", 1.0, 10000.0, 1500.0, key="earth_area")
+        has_fuel = st.checkbox("Has Fuel Tank", True, key="earth_fuel")
+        soil = st.selectbox("Soil Condition", ["Normal", "Poor"], key="earth_soil")
+        level = st.selectbox("Protection Level", ["Level I", "Level II", "Level III", "Level IV"], index=2, key="earth_level")
         
-        if st.button("Calculate Earth Pits"):
+        if st.button("Calculate Earth Pits", key="calc_earth"):
             pits = engine.calculate_earth_pits(b_area, has_fuel, soil, level)
             
             with col2:
@@ -1326,8 +1327,8 @@ with tabs[5]:
     with col1:
         st.subheader("Incomer Sizing")
         
-        total_load = st.number_input("Total Load (kW)", 1.0, 2000.0, 400.0)
-        pf = st.slider("Power Factor", 0.7, 1.0, 0.85)
+        total_load = st.number_input("Total Load (kW)", 1.0, 2000.0, 400.0, key="msb_load")
+        pf = st.slider("Power Factor", 0.7, 1.0, 0.85, key="msb_pf")
         voltage = 400
         
         ib = (total_load * 1000) / (math.sqrt(3) * voltage * pf)
@@ -1339,8 +1340,8 @@ with tabs[5]:
         st.success(f"**Incomer:** {at}AT / {af}AF {breaker_type}")
         
         # Cable selection
-        cable_len = st.number_input("Cable Length (m)", 1.0, 200.0, 50.0)
-        max_vd = st.slider("Max V.D. %", 1.0, 8.0, 4.0)
+        cable_len = st.number_input("Cable Length (m)", 1.0, 200.0, 50.0, key="msb_cable_len")
+        max_vd = st.slider("Max V.D. %", 1.0, 8.0, 4.0, key="msb_max_vd")
         
         cable = engine.select_cable(ib, cable_len, pf, max_vd)
         
@@ -1355,7 +1356,7 @@ with tabs[5]:
     with col2:
         st.subheader("Physical Layout")
         
-        num_feeder = st.number_input("No. of Feeders", 1, 20, 5)
+        num_feeder = st.number_input("No. of Feeders", 1, 20, 5, key="msb_feeders")
         width = (800 if breaker_type == "ACB" else 600) + num_feeder * 400
         width = width * 1.2  # 20% spare
         
@@ -1377,11 +1378,11 @@ with tabs[6]:
     with col1:
         st.subheader("Predictive Maintenance")
         
-        equip = st.selectbox("Equipment", list(engine.equipment_lifetime.keys()))
-        hours = st.slider("Operating Hours", 0, 50000, 10000)
-        last = st.date_input("Last Service", datetime.now() - timedelta(days=180))
+        equip = st.selectbox("Equipment", list(engine.equipment_lifetime.keys()), key="maint_equip")
+        hours = st.slider("Operating Hours", 0, 50000, 10000, key="maint_hours")
+        last = st.date_input("Last Service", datetime.now() - timedelta(days=180), key="maint_last")
         
-        if st.button("Check Status"):
+        if st.button("Check Status", key="check_maint"):
             pred = engine.predict_maintenance(equip, hours, datetime.combine(last, datetime.min.time()))
             
             with col2:
