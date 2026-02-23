@@ -27,7 +27,7 @@ class SGProEngine:
             50: 201, 70: 255, 95: 309, 120: 358, 150: 410, 185: 469, 240: 551, 300: 627
         }
         
-        # Cable impedance (simplified)
+        # Cable impedance
         self.cable_impedance = {
             1.5: {"r": 14.8, "x": 0.145},
             2.5: {"r": 8.91, "x": 0.135},
@@ -47,13 +47,13 @@ class SGProEngine:
             300: {"r": 0.0795, "x": 0.085}
         }
         
-        # Cable diameters for tray sizing
+        # Cable diameters
         self.cable_diameters = {
             1.5: 12, 2.5: 13, 4: 14, 6: 15, 10: 17, 16: 19, 25: 22, 35: 24,
             50: 27, 70: 30, 95: 33, 120: 36, 150: 39, 185: 42, 240: 46, 300: 50
         }
         
-        # Lighting Standards (expanded for large spaces)
+        # Lighting Standards
         self.lighting_standards = {
             "Office": {"lux": 400, "watt_per_m2": 8, "type": "LED Panel"},
             "Meeting Room": {"lux": 500, "watt_per_m2": 12, "type": "LED Downlight"},
@@ -86,6 +86,274 @@ class SGProEngine:
             "Factory": {"density": 25, "type": "16A/32A Industrial", "load_per_socket": 500}
         }
         
+        # ==================== COMPREHENSIVE FAN DATABASE ====================
+        self.fan_database = {
+            # HVLS Fans (High Volume Low Speed) - Large Industrial/Commercial
+            "HVLS Fan - 8ft (2.4m)": {
+                "type": "HVLS",
+                "blade_diameter_ft": 8,
+                "blade_diameter_m": 2.4,
+                "coverage_m2": 150,
+                "airflow_cfm": 30000,
+                "power_w": 300,
+                "mounting_height_min_m": 4,
+                "mounting_height_ideal_m": "6-10",
+                "noise_level": "Very Low",
+                "speed_control": "VFD",
+                "suitable_for": ["Warehouse", "Factory", "Exhibition Hall", "Sports Hall", "Hawker Centre", "Market"]
+            },
+            "HVLS Fan - 10ft (3.0m)": {
+                "type": "HVLS",
+                "blade_diameter_ft": 10,
+                "blade_diameter_m": 3.0,
+                "coverage_m2": 250,
+                "airflow_cfm": 45000,
+                "power_w": 500,
+                "mounting_height_min_m": 4.5,
+                "mounting_height_ideal_m": "6-12",
+                "noise_level": "Very Low",
+                "speed_control": "VFD",
+                "suitable_for": ["Warehouse", "Factory", "Exhibition Hall", "Sports Hall", "Hawker Centre", "Market"]
+            },
+            "HVLS Fan - 12ft (3.7m)": {
+                "type": "HVLS",
+                "blade_diameter_ft": 12,
+                "blade_diameter_m": 3.7,
+                "coverage_m2": 350,
+                "airflow_cfm": 60000,
+                "power_w": 800,
+                "mounting_height_min_m": 5,
+                "mounting_height_ideal_m": "7-14",
+                "noise_level": "Very Low",
+                "speed_control": "VFD",
+                "suitable_for": ["Warehouse", "Factory", "Exhibition Hall", "Sports Hall"]
+            },
+            "HVLS Fan - 16ft (4.9m)": {
+                "type": "HVLS",
+                "blade_diameter_ft": 16,
+                "blade_diameter_m": 4.9,
+                "coverage_m2": 600,
+                "airflow_cfm": 90000,
+                "power_w": 1200,
+                "mounting_height_min_m": 6,
+                "mounting_height_ideal_m": "8-16",
+                "noise_level": "Very Low",
+                "speed_control": "VFD",
+                "suitable_for": ["Warehouse", "Factory", "Distribution Centre"]
+            },
+            "HVLS Fan - 20ft (6.1m)": {
+                "type": "HVLS",
+                "blade_diameter_ft": 20,
+                "blade_diameter_m": 6.1,
+                "coverage_m2": 900,
+                "airflow_cfm": 120000,
+                "power_w": 1500,
+                "mounting_height_min_m": 7,
+                "mounting_height_ideal_m": "9-18",
+                "noise_level": "Very Low",
+                "speed_control": "VFD",
+                "suitable_for": ["Warehouse", "Factory", "Airport", "Convention Centre"]
+            },
+            "HVLS Fan - 24ft (7.3m)": {
+                "type": "HVLS",
+                "blade_diameter_ft": 24,
+                "blade_diameter_m": 7.3,
+                "coverage_m2": 1200,
+                "airflow_cfm": 150000,
+                "power_w": 2000,
+                "mounting_height_min_m": 8,
+                "mounting_height_ideal_m": "10-20",
+                "noise_level": "Very Low",
+                "speed_control": "VFD",
+                "suitable_for": ["Very Large Warehouse", "Exhibition Hall", "Airport Hangar"]
+            },
+            
+            # Ceiling Fans - Commercial/Industrial
+            "Ceiling Fan - 48\" (1200mm) Commercial": {
+                "type": "Ceiling",
+                "blade_diameter_in": 48,
+                "blade_diameter_mm": 1200,
+                "coverage_m2": 20,
+                "airflow_cfm": 6000,
+                "power_w": 75,
+                "mounting_height_m": "2.5-3.5",
+                "noise_level": "Low",
+                "speed_control": "Multi-speed",
+                "suitable_for": ["Office", "Restaurant", "Shop", "Classroom"]
+            },
+            "Ceiling Fan - 56\" (1400mm) Commercial": {
+                "type": "Ceiling",
+                "blade_diameter_in": 56,
+                "blade_diameter_mm": 1400,
+                "coverage_m2": 25,
+                "airflow_cfm": 8000,
+                "power_w": 90,
+                "mounting_height_m": "2.5-3.5",
+                "noise_level": "Low",
+                "speed_control": "Multi-speed",
+                "suitable_for": ["Office", "Restaurant", "Shop", "Classroom"]
+            },
+            "Ceiling Fan - 60\" (1500mm) Heavy Duty": {
+                "type": "Ceiling",
+                "blade_diameter_in": 60,
+                "blade_diameter_mm": 1500,
+                "coverage_m2": 30,
+                "airflow_cfm": 10000,
+                "power_w": 120,
+                "mounting_height_m": "3-4",
+                "noise_level": "Medium",
+                "speed_control": "Remote 5-speed",
+                "suitable_for": ["Hawker Centre", "Market", "Gym", "Canteen"]
+            },
+            
+            # Wall Mounted Fans
+            "Wall Fan - 18\" (450mm) Oscillating": {
+                "type": "Wall",
+                "blade_diameter_in": 18,
+                "blade_diameter_mm": 450,
+                "coverage_m2": 25,
+                "airflow_cfm": 4000,
+                "power_w": 120,
+                "mounting_height_m": "2.5-3",
+                "noise_level": "Medium",
+                "speed_control": "3-speed",
+                "suitable_for": ["Workshop", "Kitchen", "Store", "Loading Bay"]
+            },
+            "Wall Fan - 24\" (600mm) Industrial": {
+                "type": "Wall",
+                "blade_diameter_in": 24,
+                "blade_diameter_mm": 600,
+                "coverage_m2": 40,
+                "airflow_cfm": 7000,
+                "power_w": 200,
+                "mounting_height_m": "2.5-3",
+                "noise_level": "Medium",
+                "speed_control": "3-speed",
+                "suitable_for": ["Workshop", "Factory", "Warehouse", "Loading Bay"]
+            },
+            "Wall Fan - 30\" (750mm) Heavy Duty": {
+                "type": "Wall",
+                "blade_diameter_in": 30,
+                "blade_diameter_mm": 750,
+                "coverage_m2": 60,
+                "airflow_cfm": 10000,
+                "power_w": 300,
+                "mounting_height_m": "3-4",
+                "noise_level": "High",
+                "speed_control": "3-speed",
+                "suitable_for": ["Factory", "Warehouse", "Industrial Workshop"]
+            },
+            
+            # Pedestal Fans
+            "Pedestal Fan - 18\" (450mm)": {
+                "type": "Pedestal",
+                "blade_diameter_in": 18,
+                "blade_diameter_mm": 450,
+                "coverage_m2": 20,
+                "airflow_cfm": 3500,
+                "power_w": 80,
+                "mounting_height": "Adjustable",
+                "noise_level": "Medium",
+                "speed_control": "3-speed",
+                "suitable_for": ["Office", "Shop", "Temporary Area"]
+            },
+            "Pedestal Fan - 24\" (600mm) Industrial": {
+                "type": "Pedestal",
+                "blade_diameter_in": 24,
+                "blade_diameter_mm": 600,
+                "coverage_m2": 35,
+                "airflow_cfm": 6000,
+                "power_w": 150,
+                "mounting_height": "Adjustable",
+                "noise_level": "High",
+                "speed_control": "3-speed",
+                "suitable_for": ["Workshop", "Factory", "Warehouse", "Event"]
+            },
+            
+            # Exhaust Fans
+            "Exhaust Fan - 10\" (250mm)": {
+                "type": "Exhaust",
+                "blade_diameter_in": 10,
+                "blade_diameter_mm": 250,
+                "airflow_cfm": 500,
+                "power_w": 50,
+                "noise_level": "Low",
+                "suitable_for": ["Toilet", "Store Room", "Small Office"]
+            },
+            "Exhaust Fan - 12\" (300mm)": {
+                "type": "Exhaust",
+                "blade_diameter_in": 12,
+                "blade_diameter_mm": 300,
+                "airflow_cfm": 800,
+                "power_w": 80,
+                "noise_level": "Medium",
+                "suitable_for": ["Toilet", "Kitchen", "Store Room"]
+            },
+            "Exhaust Fan - 16\" (400mm) Industrial": {
+                "type": "Exhaust",
+                "blade_diameter_in": 16,
+                "blade_diameter_mm": 400,
+                "airflow_cfm": 1500,
+                "power_w": 150,
+                "noise_level": "Medium",
+                "suitable_for": ["Kitchen", "Plant Room", "Workshop"]
+            },
+            "Exhaust Fan - 20\" (500mm) Heavy Duty": {
+                "type": "Exhaust",
+                "blade_diameter_in": 20,
+                "blade_diameter_mm": 500,
+                "airflow_cfm": 2500,
+                "power_w": 250,
+                "noise_level": "High",
+                "suitable_for": ["Commercial Kitchen", "Factory", "Plant Room"]
+            },
+            
+            # Jet Fans (for car parks)
+            "Jet Fan - 25N Thrust": {
+                "type": "Jet",
+                "thrust_n": 25,
+                "airflow_cfm": 8000,
+                "power_w": 550,
+                "mounting": "Below ceiling",
+                "suitable_for": ["Car Park", "Tunnel"]
+            },
+            "Jet Fan - 35N Thrust": {
+                "type": "Jet",
+                "thrust_n": 35,
+                "airflow_cfm": 12000,
+                "power_w": 750,
+                "mounting": "Below ceiling",
+                "suitable_for": ["Car Park", "Tunnel"]
+            },
+            "Jet Fan - 45N Thrust": {
+                "type": "Jet",
+                "thrust_n": 45,
+                "airflow_cfm": 16000,
+                "power_w": 1100,
+                "mounting": "Below ceiling",
+                "suitable_for": ["Large Car Park", "Tunnel"]
+            }
+        }
+        
+        # Ventilation requirements (ACH - Air Changes per Hour)
+        self.ventilation_requirements = {
+            "Office": {"ac": 6, "non_ac": 8, "purpose": "Fresh air for occupants"},
+            "Meeting Room": {"ac": 8, "non_ac": 12, "purpose": "Higher occupancy"},
+            "Corridor": {"ac": 2, "non_ac": 4, "purpose": "Basic ventilation"},
+            "Car Park": {"ac": 0, "non_ac": 6, "purpose": "CO removal, smoke control"},
+            "Restaurant": {"ac": 8, "non_ac": 15, "purpose": "Odour control"},
+            "Kitchen": {"ac": 15, "non_ac": 30, "purpose": "Heat and fume extraction"},
+            "Toilet": {"ac": 10, "non_ac": 15, "purpose": "Odour removal"},
+            "Warehouse": {"ac": 2, "non_ac": 4, "purpose": "Heat removal"},
+            "Hawker Centre": {"ac": 0, "non_ac": 12, "purpose": "Heat and fume extraction"},
+            "Market": {"ac": 0, "non_ac": 12, "purpose": "Ventilation"},
+            "Exhibition Hall": {"ac": 6, "non_ac": 10, "purpose": "Occupant comfort"},
+            "Sports Hall": {"ac": 8, "non_ac": 12, "purpose": "Active occupants"},
+            "Factory": {"ac": 4, "non_ac": 8, "purpose": "Heat and fume removal"},
+            "Plant Room": {"ac": 10, "non_ac": 15, "purpose": "Equipment cooling"},
+            "Generator Room": {"ac": 20, "non_ac": 30, "purpose": "Combustion air + cooling"}
+        }
+        
         # EV Charger Config
         self.ev_config = {
             "percentage": 15,
@@ -102,6 +370,7 @@ class SGProEngine:
             "Generator": 20,
             "UPS Battery": 5,
             "Fan Motor": 10,
+            "HVLS Fan Motor": 15,
             "Pump Motor": 15,
             "EV Charger": 10
         }
@@ -109,40 +378,10 @@ class SGProEngine:
         # Maintenance templates
         self.maintenance_templates = {
             "daily": ["Generator visual check", "Battery charger status", "Fuel level check"],
-            "weekly": ["Generator run test", "Battery voltage check", "Emergency lighting test"],
-            "monthly": ["Earth resistance test", "Circuit breaker exercise", "Thermal scan"],
-            "quarterly": ["Insulation test", "Relay calibration", "Battery load test"],
-            "annually": ["Full load generator test", "Oil change", "Professional inspection"]
-        }
-        
-        # Fan database for large spaces
-        self.fan_database = {
-            "HVLS Fan (8ft)": {"coverage": 150, "power": 300, "airflow": 30000},
-            "HVLS Fan (10ft)": {"coverage": 250, "power": 500, "airflow": 45000},
-            "HVLS Fan (12ft)": {"coverage": 350, "power": 800, "airflow": 60000},
-            "HVLS Fan (16ft)": {"coverage": 600, "power": 1200, "airflow": 90000},
-            "HVLS Fan (20ft)": {"coverage": 900, "power": 1500, "airflow": 120000},
-            "HVLS Fan (24ft)": {"coverage": 1200, "power": 2000, "airflow": 150000},
-            "Industrial Pedestal": {"coverage": 100, "power": 800, "airflow": 25000},
-            "Wall Mounted Fan": {"coverage": 50, "power": 300, "airflow": 10000},
-            "Exhaust Fan (Large)": {"coverage": 200, "power": 250, "airflow": 2500}
-        }
-        
-        # Ventilation requirements (ACH - Air Changes per Hour)
-        self.ventilation_requirements = {
-            "Office": {"ac": 6, "non_ac": 8},
-            "Meeting Room": {"ac": 8, "non_ac": 12},
-            "Corridor": {"ac": 2, "non_ac": 4},
-            "Car Park": {"ac": 0, "non_ac": 6},
-            "Restaurant": {"ac": 8, "non_ac": 15},
-            "Kitchen": {"ac": 15, "non_ac": 30},
-            "Warehouse": {"ac": 2, "non_ac": 4},
-            "Hawker Centre": {"ac": 0, "non_ac": 12},
-            "Market": {"ac": 0, "non_ac": 12},
-            "Exhibition Hall": {"ac": 6, "non_ac": 10},
-            "Sports Hall": {"ac": 8, "non_ac": 12},
-            "Factory": {"ac": 4, "non_ac": 8},
-            "Plant Room": {"ac": 10, "non_ac": 15}
+            "weekly": ["Generator run test", "Battery voltage check", "Emergency lighting test", "Fan operation check"],
+            "monthly": ["Earth resistance test", "Circuit breaker exercise", "Thermal scan", "Fan bearing check"],
+            "quarterly": ["Insulation test", "Relay calibration", "Battery load test", "HVLS fan tension check"],
+            "annually": ["Full load generator test", "Oil change", "Professional inspection", "Fan motor servicing"]
         }
 
     # ==================== CORE CALCULATION METHODS ====================
@@ -246,69 +485,224 @@ class SGProEngine:
             "load_per_socket": std["load_per_socket"]
         }
     
-    def calculate_fans(self, room_type, length, width, height, is_aircond=False):
-        """Calculate fan requirements for large spaces"""
+    def get_fan_recommendations(self, room_type, length, width, height, is_aircond=False, manual_selection=None):
+        """
+        Get fan recommendations based on room parameters
+        Can either auto-recommend or use manual selection
+        """
         area = length * width
         volume = area * height
         
         # Get ventilation requirement
         vent = self.ventilation_requirements.get(room_type, 
-                   self.ventilation_requirements.get("Office", {"ac": 6, "non_ac": 8}))
+                   self.ventilation_requirements.get("Office", {"ac": 6, "non_ac": 8, "purpose": "Ventilation"}))
         
         ach = vent["ac"] if is_aircond else vent["non_ac"]
         required_cfm = volume * ach * 0.588  # Convert to CFM
         
         recommendations = []
         
-        # For very large spaces (>=1000m²), use HVLS fans
-        if area >= 1000:
-            hvls_fans = [f for f in self.fan_database.keys() if "HVLS" in f]
-            for fan_type in hvls_fans:
-                fan = self.fan_database[fan_type]
-                num_fans = math.ceil(area / fan["coverage"])
-                if num_fans <= 12:  # Reasonable max
+        # If manual selection is provided, use that specific fan
+        if manual_selection and manual_selection in self.fan_database:
+            fan = self.fan_database[manual_selection]
+            
+            # Calculate number needed
+            if "coverage_m2" in fan:
+                num_fans = math.ceil(area / fan["coverage_m2"])
+            elif "airflow_cfm" in fan:
+                num_fans = math.ceil(required_cfm / fan["airflow_cfm"])
+            else:
+                num_fans = 1
+            
+            recommendations.append({
+                "name": manual_selection,
+                "type": fan["type"],
+                "specifications": fan,
+                "quantity": num_fans,
+                "total_power": num_fans * fan["power_w"],
+                "total_airflow": num_fans * fan.get("airflow_cfm", 0),
+                "coverage": fan.get("coverage_m2", "N/A"),
+                "mounting": fan.get("mounting_height_m", fan.get("mounting_height_ideal_m", "Standard"))
+            })
+            
+            return {
+                "area": area,
+                "volume": volume,
+                "ach_required": ach,
+                "required_cfm": required_cfm,
+                "recommendations": recommendations,
+                "total_power": sum(r["total_power"] for r in recommendations),
+                "is_manual": True
+            }
+        
+        # Auto-recommendation logic based on room characteristics
+        else:
+            # For very large spaces (>=1000m²) with high ceiling, use HVLS fans
+            if area >= 1000 and height >= 6:
+                hvls_fans = {name: fan for name, fan in self.fan_database.items() 
+                            if fan["type"] == "HVLS"}
+                
+                # Sort by coverage (largest first)
+                hvls_sorted = sorted(hvls_fans.items(), 
+                                    key=lambda x: x[1]["coverage_m2"], 
+                                    reverse=True)
+                
+                for name, fan in hvls_sorted:
+                    # Find a fan that can cover the area reasonably
+                    if fan["coverage_m2"] >= area * 0.3:  # At least 30% coverage
+                        num_fans = math.ceil(area / fan["coverage_m2"])
+                        if num_fans <= 12:  # Reasonable number
+                            recommendations.append({
+                                "name": name,
+                                "type": "HVLS",
+                                "specifications": fan,
+                                "quantity": num_fans,
+                                "total_power": num_fans * fan["power_w"],
+                                "total_airflow": num_fans * fan["airflow_cfm"],
+                                "coverage": fan["coverage_m2"],
+                                "mounting": f"Min {fan['mounting_height_min_m']}m"
+                            })
+                            break
+            
+            # For large spaces (200-1000m²), consider HVLS or commercial ceiling fans
+            elif area >= 200:
+                # Check ceiling height
+                if height >= 5:
+                    # Try HVLS fans
+                    hvls_fans = {name: fan for name, fan in self.fan_database.items() 
+                                if fan["type"] == "HVLS" and fan["coverage_m2"] <= 600}
+                    
+                    for name, fan in hvls_fans.items():
+                        num_fans = math.ceil(area / fan["coverage_m2"])
+                        if num_fans <= 6:
+                            recommendations.append({
+                                "name": name,
+                                "type": "HVLS",
+                                "specifications": fan,
+                                "quantity": num_fans,
+                                "total_power": num_fans * fan["power_w"],
+                                "total_airflow": num_fans * fan["airflow_cfm"],
+                                "coverage": fan["coverage_m2"],
+                                "mounting": f"Min {fan['mounting_height_min_m']}m"
+                            })
+                            break
+                
+                # If no HVLS selected, use heavy duty ceiling fans
+                if not recommendations:
+                    ceiling_fans = {name: fan for name, fan in self.fan_database.items() 
+                                   if fan["type"] == "Ceiling" and "Heavy Duty" in name}
+                    
+                    for name, fan in ceiling_fans.items():
+                        num_fans = math.ceil(area / fan["coverage_m2"])
+                        recommendations.append({
+                            "name": name,
+                            "type": "Ceiling",
+                            "specifications": fan,
+                            "quantity": num_fans,
+                            "total_power": num_fans * fan["power_w"],
+                            "total_airflow": num_fans * fan["airflow_cfm"],
+                            "coverage": fan["coverage_m2"],
+                            "mounting": fan["mounting_height_m"]
+                        })
+                        break
+            
+            # For medium spaces (50-200m²), use commercial ceiling fans
+            elif area >= 50:
+                ceiling_fans = {name: fan for name, fan in self.fan_database.items() 
+                               if fan["type"] == "Ceiling" and "Commercial" in name}
+                
+                for name, fan in ceiling_fans.items():
+                    num_fans = math.ceil(area / fan["coverage_m2"])
                     recommendations.append({
-                        "type": fan_type,
+                        "name": name,
+                        "type": "Ceiling",
+                        "specifications": fan,
                         "quantity": num_fans,
-                        "power": num_fans * fan["power"],
-                        "airflow": num_fans * fan["airflow"],
-                        "coverage": fan["coverage"]
+                        "total_power": num_fans * fan["power_w"],
+                        "total_airflow": num_fans * fan["airflow_cfm"],
+                        "coverage": fan["coverage_m2"],
+                        "mounting": fan["mounting_height_m"]
                     })
                     break
-        
-        # For medium spaces, use industrial pedestal fans
-        elif area >= 200:
-            fan = self.fan_database["Industrial Pedestal"]
-            num_fans = math.ceil(area / fan["coverage"])
-            recommendations.append({
-                "type": "Industrial Pedestal Fan",
-                "quantity": num_fans,
-                "power": num_fans * fan["power"],
-                "airflow": num_fans * fan["airflow"]
-            })
-        
-        # For smaller spaces, use wall mounted fans
-        else:
-            fan = self.fan_database["Wall Mounted Fan"]
-            num_fans = math.ceil(area / fan["coverage"])
-            recommendations.append({
-                "type": "Wall Mounted Fan",
-                "quantity": num_fans,
-                "power": num_fans * fan["power"],
-                "airflow": num_fans * fan["airflow"]
-            })
-        
-        # Add exhaust fans for certain room types
-        if room_type in ["Kitchen", "Restaurant", "Toilet", "Plant Room"]:
-            exhaust = self.fan_database["Exhaust Fan (Large)"]
-            num_exhaust = math.ceil(required_cfm / exhaust["airflow"])
-            recommendations.append({
-                "type": "Exhaust Fan",
-                "quantity": num_exhaust,
-                "power": num_exhaust * exhaust["power"],
-                "airflow": num_exhaust * exhaust["airflow"],
-                "purpose": "Ventilation"
-            })
+            
+            # For smaller spaces, use standard ceiling fans or wall fans
+            else:
+                if height < 3:
+                    # Use wall mounted fans
+                    wall_fans = {name: fan for name, fan in self.fan_database.items() 
+                                if fan["type"] == "Wall"}
+                    
+                    for name, fan in wall_fans.items():
+                        num_fans = math.ceil(area / fan["coverage_m2"])
+                        recommendations.append({
+                            "name": name,
+                            "type": "Wall",
+                            "specifications": fan,
+                            "quantity": num_fans,
+                            "total_power": num_fans * fan["power_w"],
+                            "total_airflow": num_fans * fan["airflow_cfm"],
+                            "coverage": fan["coverage_m2"],
+                            "mounting": fan["mounting_height_m"]
+                        })
+                        break
+                else:
+                    # Use ceiling fans
+                    ceiling_fans = {name: fan for name, fan in self.fan_database.items() 
+                                   if fan["type"] == "Ceiling"}
+                    
+                    for name, fan in ceiling_fans.items():
+                        num_fans = math.ceil(area / fan["coverage_m2"])
+                        recommendations.append({
+                            "name": name,
+                            "type": "Ceiling",
+                            "specifications": fan,
+                            "quantity": num_fans,
+                            "total_power": num_fans * fan["power_w"],
+                            "total_airflow": num_fans * fan["airflow_cfm"],
+                            "coverage": fan["coverage_m2"],
+                            "mounting": fan["mounting_height_m"]
+                        })
+                        break
+            
+            # Add exhaust fans for rooms that need ventilation
+            if room_type in ["Kitchen", "Restaurant", "Toilet", "Plant Room", "Generator Room", "Car Park"]:
+                exhaust_fans = {name: fan for name, fan in self.fan_database.items() 
+                               if fan["type"] == "Exhaust"}
+                
+                # Calculate required exhaust CFM
+                if room_type == "Car Park":
+                    # For car parks, use jet fans
+                    jet_fans = {name: fan for name, fan in self.fan_database.items() 
+                               if fan["type"] == "Jet"}
+                    
+                    for name, fan in jet_fans.items():
+                        num_fans = math.ceil(required_cfm / fan["airflow_cfm"])
+                        recommendations.append({
+                            "name": name,
+                            "type": "Jet Fan",
+                            "specifications": fan,
+                            "quantity": num_fans,
+                            "total_power": num_fans * fan["power_w"],
+                            "total_airflow": num_fans * fan["airflow_cfm"],
+                            "purpose": "Smoke control and ventilation"
+                        })
+                        break
+                else:
+                    # For other rooms, use exhaust fans
+                    for name, fan in exhaust_fans.items():
+                        if fan["airflow_cfm"] >= required_cfm * 0.5:  # Fan can handle at least 50%
+                            num_fans = math.ceil(required_cfm / fan["airflow_cfm"])
+                            if num_fans <= 4:
+                                recommendations.append({
+                                    "name": name,
+                                    "type": "Exhaust",
+                                    "specifications": fan,
+                                    "quantity": num_fans,
+                                    "total_power": num_fans * fan["power_w"],
+                                    "total_airflow": num_fans * fan["airflow_cfm"],
+                                    "purpose": "Mechanical ventilation"
+                                })
+                                break
         
         return {
             "area": area,
@@ -316,8 +710,22 @@ class SGProEngine:
             "ach_required": ach,
             "required_cfm": required_cfm,
             "recommendations": recommendations,
-            "total_power": sum(r["power"] for r in recommendations)
+            "total_power": sum(r["total_power"] for r in recommendations),
+            "purpose": vent.get("purpose", "Ventilation"),
+            "is_manual": False
         }
+    
+    def get_fan_types_by_category(self, category=None):
+        """Get fan types filtered by category"""
+        if category:
+            return {name: fan for name, fan in self.fan_database.items() 
+                   if fan["type"] == category}
+        return self.fan_database
+    
+    def get_fan_sizes_for_type(self, fan_type):
+        """Get available sizes for a specific fan type"""
+        fans = self.get_fan_types_by_category(fan_type)
+        return list(fans.keys())
     
     def calculate_ev_chargers(self, total_lots):
         """Calculate EV charger requirements (15% of lots)"""
@@ -474,8 +882,9 @@ with st.sidebar:
     st.markdown(f"[💰 Donate via PayPal]({paypal_url})")
     
     st.markdown("---")
-    st.markdown(f"**Version:** 3.3 | **Updated:** 2024")
+    st.markdown(f"**Version:** 3.4 | **Updated:** 2024")
     st.markdown("**Supports large spaces up to 500m**")
+    st.markdown("**Fan Types:** HVLS, Ceiling, Wall, Pedestal, Exhaust, Jet")
 
 # ==================== MAIN TABS ====================
 st.title("🏗️ SG Electrical Design Professional")
@@ -496,10 +905,10 @@ tab_names = [
 
 tabs = st.tabs(tab_names)
 
-# ==================== TAB 1: ROOM DESIGN ====================
+# ==================== TAB 1: ROOM DESIGN (with Fan Selection) ====================
 with tabs[0]:
     st.header("Room Electrical Design")
-    st.markdown("Design lighting, socket outlets, and ventilation for any space (up to 500m length)")
+    st.markdown("Design lighting, socket outlets, and ventilation fans for any space (up to 500m length)")
     
     col1, col2 = st.columns([1, 1])
     
@@ -532,6 +941,36 @@ with tabs[0]:
         include_lighting = st.checkbox("Include Lighting Design", True, key="inc_lighting")
         include_sockets = st.checkbox("Include Socket Outlets", True, key="inc_sockets")
         include_fans = st.checkbox("Include Ventilation Fans", True, key="inc_fans")
+        
+        # Fan Selection Section (only shown if include_fans is True)
+        if include_fans:
+            st.subheader("🌀 Fan Selection")
+            fan_selection_mode = st.radio("Fan Selection Mode",
+                                         ["Auto-Recommend", "Manual Selection"],
+                                         key="fan_mode")
+            
+            if fan_selection_mode == "Manual Selection":
+                # Get fan types
+                fan_types = ["HVLS", "Ceiling", "Wall", "Pedestal", "Exhaust", "Jet"]
+                selected_fan_type = st.selectbox("Select Fan Type", fan_types, key="fan_type")
+                
+                # Get available fans of that type
+                available_fans = engine.get_fan_sizes_for_type(selected_fan_type)
+                if available_fans:
+                    selected_fan = st.selectbox("Select Fan Model", available_fans, key="fan_model")
+                    
+                    # Show fan specifications
+                    fan_specs = engine.fan_database[selected_fan]
+                    with st.expander("📋 Fan Specifications"):
+                        for key, value in fan_specs.items():
+                            if key != "suitable_for":
+                                st.write(f"**{key.replace('_', ' ').title()}:** {value}")
+                        st.write("**Suitable For:**", ", ".join(fan_specs.get("suitable_for", ["General"])))
+                else:
+                    st.warning(f"No fans available in {selected_fan_type} category")
+                    selected_fan = None
+            else:
+                selected_fan = None
         
         if st.button("Calculate Room Design", type="primary", key="calc_room"):
             with col2:
@@ -571,15 +1010,43 @@ with tabs[0]:
                 # Fan Results
                 if include_fans:
                     st.write("### 🌀 Ventilation Fans")
-                    fans = engine.calculate_fans(selected_room, length, width, height, 
-                                                "Air Conditioned" in ac_status)
-                    if fans and fans['recommendations']:
-                        st.metric("Required Airflow", f"{fans['required_cfm']:,.0f} CFM")
+                    
+                    # Get fan recommendations
+                    fan_results = engine.get_fan_recommendations(
+                        selected_room, length, width, height,
+                        "Air Conditioned" in ac_status,
+                        selected_fan if fan_selection_mode == "Manual Selection" else None
+                    )
+                    
+                    if fan_results:
+                        st.metric("Required Airflow", f"{fan_results['required_cfm']:,.0f} CFM")
+                        st.metric("Air Changes/Hour", fan_results['ach_required'])
                         
-                        for fan in fans['recommendations']:
-                            st.write(f"**{fan['type']}:** {fan['quantity']} units")
-                            st.write(f"- Power: {fan['power']}W, Airflow: {fan['airflow']:,.0f} CFM")
-                            total_load += fan['power']
+                        if fan_results['recommendations']:
+                            for fan in fan_results['recommendations']:
+                                with st.expander(f"**{fan['name']}**"):
+                                    st.write(f"**Type:** {fan['type']}")
+                                    st.write(f"**Quantity:** {fan['quantity']} units")
+                                    st.write(f"**Total Power:** {fan['total_power']}W")
+                                    st.write(f"**Total Airflow:** {fan['total_airflow']:,.0f} CFM")
+                                    
+                                    # Show key specifications
+                                    specs = fan['specifications']
+                                    if 'blade_diameter_ft' in specs:
+                                        st.write(f"**Blade Diameter:** {specs['blade_diameter_ft']}ft ({specs['blade_diameter_m']}m)")
+                                    elif 'blade_diameter_in' in specs:
+                                        st.write(f"**Blade Diameter:** {specs['blade_diameter_in']}\" ({specs['blade_diameter_mm']}mm)")
+                                    
+                                    st.write(f"**Coverage per Fan:** {fan.get('coverage', 'N/A')} m²")
+                                    st.write(f"**Mounting:** {fan['mounting']}")
+                                    st.write(f"**Noise Level:** {specs.get('noise_level', 'N/A')}")
+                                    st.write(f"**Speed Control:** {specs.get('speed_control', 'Standard')}")
+                            
+                            total_load += fan_results['total_power']
+                            st.info(f"**Purpose:** {fan_results.get('purpose', 'Ventilation')}")
+                        else:
+                            st.warning("No fan recommendations available for this space")
+                        
                         st.divider()
                 
                 # Total Load
@@ -851,7 +1318,7 @@ with tabs[7]:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center'>
-    <p>© SG Electrical Design Pro | Version 3.3 | Compliant with Singapore Standards</p>
-    <p style='font-size: 0.8em; color: gray'>Supports large spaces up to 500m • Designed for installers, engineers, and facility managers</p>
+    <p>© SG Electrical Design Pro | Version 3.4 | Compliant with Singapore Standards</p>
+    <p style='font-size: 0.8em; color: gray'>Supports large spaces up to 500m • Comprehensive Fan Selection: HVLS, Ceiling, Wall, Pedestal, Exhaust, Jet</p>
 </div>
 """, unsafe_allow_html=True)
