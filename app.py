@@ -206,6 +206,58 @@ class SGProEngine:
                 "color_temp": "4000K",
                 "cri_requirement": ">80",
                 "ip_rating": "IP65"
+            },
+            "Market": {
+                "recommended_lux": 300,
+                "led_watt_per_m2": 10,
+                "fitting_type": "LED Highbay / Vapor-tight",
+                "lumens_per_fitting": 10000,
+                "watt_per_fitting": 100,
+                "mounting_height": "4-6m",
+                "color_temp": "4000K",
+                "cri_requirement": ">80",
+                "ip_rating": "IP65"
+            },
+            "Exhibition Hall": {
+                "recommended_lux": 300,
+                "led_watt_per_m2": 12,
+                "fitting_type": "LED Highbay / Track Light",
+                "lumens_per_fitting": 15000,
+                "watt_per_fitting": 150,
+                "mounting_height": "6-12m",
+                "color_temp": "4000K",
+                "cri_requirement": ">90"
+            },
+            "Sports Hall": {
+                "recommended_lux": 500,
+                "led_watt_per_m2": 15,
+                "fitting_type": "LED Sports Light",
+                "lumens_per_fitting": 25000,
+                "watt_per_fitting": 250,
+                "mounting_height": "8-15m",
+                "color_temp": "5000K",
+                "cri_requirement": ">80"
+            },
+            "Factory / Industrial": {
+                "recommended_lux": 300,
+                "led_watt_per_m2": 10,
+                "fitting_type": "LED Industrial Highbay",
+                "lumens_per_fitting": 20000,
+                "watt_per_fitting": 200,
+                "mounting_height": "6-12m",
+                "color_temp": "5000K",
+                "cri_requirement": ">70",
+                "ip_rating": "IP65"
+            },
+            "Airport / Terminal": {
+                "recommended_lux": 300,
+                "led_watt_per_m2": 12,
+                "fitting_type": "LED Linear / Highbay",
+                "lumens_per_fitting": 15000,
+                "watt_per_fitting": 150,
+                "mounting_height": "8-15m",
+                "color_temp": "4000K",
+                "cri_requirement": ">80"
             }
         }
         
@@ -290,6 +342,30 @@ class SGProEngine:
                 "circuit_rating": "20A radial per stall",
                 "max_sockets_per_circuit": 2,
                 "special_requirements": ["Weatherproof covers", "Individual RCBO", "High temperature rating"]
+            },
+            "Market": {
+                "density": "1 socket per stall (minimum 2)",
+                "spacing": "At each stall location",
+                "type": "13A BS 1363, IP66 weatherproof",
+                "circuit_rating": "20A radial per stall",
+                "max_sockets_per_circuit": 2,
+                "special_requirements": ["Weatherproof covers", "Individual RCBO", "High temperature rating"]
+            },
+            "Exhibition Hall": {
+                "density": "1 socket per 20m²",
+                "spacing": "Floor boxes every 5m grid",
+                "type": "16A / 32A commando sockets",
+                "circuit_rating": "Individual circuits",
+                "max_sockets_per_circuit": 4,
+                "special_requirements": ["Floor boxes", "Trunking systems", "3-phase supplies"]
+            },
+            "Factory / Industrial": {
+                "density": "As per machinery layout",
+                "spacing": "Along columns every 5-10m",
+                "type": "16A / 32A / 63A industrial sockets",
+                "circuit_rating": "Individual circuits",
+                "max_sockets_per_circuit": 2,
+                "special_requirements": ["3-phase supplies", "High current capacity", "Armoured cables"]
             }
         }
         
@@ -348,6 +424,12 @@ class SGProEngine:
                 "type": "40A/63A DP Isolator with switch",
                 "location": "Adjacent to charger",
                 "purpose": "Local isolation for safety"
+            },
+            "Industrial Machine": {
+                "required": True,
+                "type": "Local isolator with lockable handle",
+                "location": "At machine, visible",
+                "purpose": "Lockout/tagout for maintenance"
             }
         }
         
@@ -374,30 +456,33 @@ class SGProEngine:
                 "speed_control": "Remote / 5-speed"
             },
             "High Volume Low Speed (HVLS)": {
-                "suitable_for": ["Hawker Centre", "Warehouse", "Factory", "Sports Hall"],
-                "blade_diameter": ["8ft (2.4m)", "10ft (3.0m)", "12ft (3.7m)", "16ft (4.9m)", "20ft (6.1m)"],
+                "suitable_for": ["Hawker Centre", "Market", "Warehouse", "Factory", "Exhibition Hall", "Sports Hall", "Airport"],
+                "blade_diameter": ["8ft (2.4m)", "10ft (3.0m)", "12ft (3.7m)", "16ft (4.9m)", "20ft (6.1m)", "24ft (7.3m)"],
                 "coverage_area_m2": {
                     "8ft": 150,
                     "10ft": 250,
                     "12ft": 350,
                     "16ft": 600,
-                    "20ft": 900
+                    "20ft": 900,
+                    "24ft": 1200
                 },
                 "airflow_cfm": {
                     "8ft": 30000,
                     "10ft": 45000,
                     "12ft": 60000,
                     "16ft": 90000,
-                    "20ft": 120000
+                    "20ft": 120000,
+                    "24ft": 150000
                 },
                 "power_watts": {
                     "8ft": 300,
                     "10ft": 500,
                     "12ft": 800,
                     "16ft": 1200,
-                    "20ft": 1500
+                    "20ft": 1500,
+                    "24ft": 2000
                 },
-                "mounting_height": "Minimum 4m, ideal 6-10m",
+                "mounting_height": "Minimum 4m, ideal 6-15m",
                 "noise_level": "Very Low",
                 "speed_control": "VFD (Variable Frequency Drive)"
             },
@@ -423,20 +508,46 @@ class SGProEngine:
                 "noise_level": "Medium",
                 "speed_control": "3-speed pull cord/switch"
             },
+            "Industrial Pedestal Fan": {
+                "suitable_for": ["Factory", "Warehouse", "Loading Bay"],
+                "blade_diameter": ["24\" (600mm)", "30\" (750mm)", "36\" (900mm)"],
+                "coverage_area_m2": {
+                    "24\"": 50,
+                    "30\"": 80,
+                    "36\"": 120
+                },
+                "airflow_cfm": {
+                    "24\"": 12000,
+                    "30\"": 18000,
+                    "36\"": 25000
+                },
+                "power_watts": {
+                    "24\"": 400,
+                    "30\"": 600,
+                    "36\"": 800
+                },
+                "mounting_height": "Floor standing",
+                "noise_level": "High",
+                "speed_control": "3-speed switch"
+            },
             "Exhaust Fan (Wall/Ceiling)": {
                 "suitable_for": ["Toilet", "Kitchen", "Store Room", "Plant Room"],
-                "blade_diameter": ["6\" (150mm)", "8\" (200mm)", "10\" (250mm)", "12\" (300mm)"],
+                "blade_diameter": ["6\" (150mm)", "8\" (200mm)", "10\" (250mm)", "12\" (300mm)", "16\" (400mm)", "20\" (500mm)"],
                 "airflow_cfm": {
                     "6\"": 150,
                     "8\"": 300,
                     "10\"": 500,
-                    "12\"": 800
+                    "12\"": 800,
+                    "16\"": 1500,
+                    "20\"": 2500
                 },
                 "power_watts": {
                     "6\"": 20,
                     "8\"": 35,
                     "10\"": 50,
-                    "12\"": 80
+                    "12\"": 80,
+                    "16\"": 150,
+                    "20\"": 250
                 },
                 "sound_level_db": 45,
                 "purpose": "Ventilation",
@@ -456,6 +567,10 @@ class SGProEngine:
             "Toilet": {"ac_ach": 10, "non_ac_ach": 15, "notes": "Mechanical exhaust mandatory"},
             "Warehouse": {"ac_ach": 2, "non_ac_ach": 4, "notes": "Ventilation for heat removal"},
             "Hawker Centre": {"ac_ach": 0, "non_ac_ach": 12, "notes": "High ceiling, mechanical extraction"},
+            "Market": {"ac_ach": 0, "non_ac_ach": 12, "notes": "High ceiling, mechanical extraction"},
+            "Exhibition Hall": {"ac_ach": 6, "non_ac_ach": 10, "notes": "Variable occupancy"},
+            "Sports Hall": {"ac_ach": 8, "non_ac_ach": 12, "notes": "High activity level"},
+            "Factory": {"ac_ach": 4, "non_ac_ach": 8, "notes": "Heat removal from machinery"},
             "Plant Room": {"ac_ach": 10, "non_ac_ach": 15, "notes": "Heat removal for equipment"},
             "Generator Room": {"ac_ach": 20, "non_ac_ach": 30, "notes": "Combustion air + cooling"}
         }
@@ -515,7 +630,9 @@ class SGProEngine:
             "Earth Electrode": 15,  # years
             "Lightning Arrester": 10,  # years
             "EV Charger": 10,  # years
-            "EV Charger Cable": 5  # years
+            "EV Charger Cable": 5,  # years
+            "Industrial Machine": 15,  # years
+            "HVLS Fan": 15  # years
         }
         
         self.maintenance_templates = {
@@ -528,7 +645,8 @@ class SGProEngine:
                 {"task": "Generator run test (30 mins)", "duration_min": 45, "criticality": "High"},
                 {"task": "Battery voltage measurement", "duration_min": 15, "criticality": "Medium"},
                 {"task": "Emergency lighting test", "duration_min": 20, "criticality": "High"},
-                {"task": "EV charger visual inspection", "duration_min": 30, "criticality": "Medium"}
+                {"task": "EV charger visual inspection", "duration_min": 30, "criticality": "Medium"},
+                {"task": "HVLS fan check", "duration_min": 30, "criticality": "Medium"}
             ],
             "monthly": [
                 {"task": "Earth resistance measurement", "duration_min": 60, "criticality": "High"},
@@ -545,7 +663,8 @@ class SGProEngine:
                 {"task": "Full load generator test", "duration_min": 240, "criticality": "High"},
                 {"task": "Oil and filter change", "duration_min": 120, "criticality": "High"},
                 {"task": "Professional inspection", "duration_min": 480, "criticality": "High"},
-                {"task": "EV charger calibration check", "duration_min": 120, "criticality": "Medium"}
+                {"task": "EV charger calibration check", "duration_min": 120, "criticality": "Medium"},
+                {"task": "HVLS fan bearing check", "duration_min": 120, "criticality": "Medium"}
             ]
         }
         
@@ -755,7 +874,10 @@ class SGProEngine:
             "Restaurant": ["Kitchen Equipment"],
             "Toilet / Bathroom": ["Water Heater"],
             "Plant Room": ["Pump / Motor"],
-            "Hawker Centre": ["Stall (Hawker Centre)"]
+            "Hawker Centre": ["Stall (Hawker Centre)"],
+            "Market": ["Stall (Hawker Centre)"],
+            "Factory / Industrial": ["Industrial Machine"],
+            "Warehouse / Store": ["Industrial Machine"]
         }
         
         if room_type in room_map:
@@ -770,7 +892,7 @@ class SGProEngine:
         return isolators
     
     def calculate_fans(self, room_type, length, width, height, is_aircond=True):
-        """Calculate fan requirements"""
+        """Calculate fan requirements for large spaces"""
         area = length * width
         volume = area * height
         
@@ -783,24 +905,60 @@ class SGProEngine:
         
         recommendations = []
         
-        # HVLS for large spaces
-        if height >= 4 and area >= 150:
+        # For very large spaces (>=1000m²), recommend multiple HVLS fans or combination
+        if area >= 1000:
             hvls = self.fan_database["High Volume Low Speed (HVLS)"]
-            for size in ["8ft", "10ft", "12ft"]:
-                if hvls["coverage_area_m2"][size] >= area:
-                    num = math.ceil(area / hvls["coverage_area_m2"][size])
+            
+            # Try largest HVLS fans first
+            for size in ["24ft", "20ft", "16ft", "12ft"]:
+                if size in hvls["coverage_area_m2"]:
+                    coverage = hvls["coverage_area_m2"][size]
+                    num_fans = math.ceil(area / coverage)
+                    
+                    # For very large areas, don't exceed practical number of fans
+                    if num_fans <= 12:  # Reasonable max
+                        recommendations.append({
+                            "type": f"HVLS Fan ({size})",
+                            "size": size,
+                            "quantity": num_fans,
+                            "power": num_fans * hvls["power_watts"][size],
+                            "airflow": num_fans * hvls["airflow_cfm"][size],
+                            "mounting": hvls["mounting_height"],
+                            "coverage_per_fan": coverage
+                        })
+                        break
+            
+            # If still need more airflow, add industrial pedestal fans
+            if recommendations and recommendations[0]["airflow"] < required_cfm:
+                remaining_cfm = required_cfm - recommendations[0]["airflow"]
+                industrial = self.fan_database["Industrial Pedestal Fan"]
+                num_industrial = math.ceil(remaining_cfm / 25000)  # Using largest industrial fan
+                recommendations.append({
+                    "type": "Industrial Pedestal Fan",
+                    "quantity": num_industrial,
+                    "power": num_industrial * 800,
+                    "airflow": num_industrial * 25000,
+                    "purpose": "Supplemental air movement"
+                })
+        
+        # HVLS for large spaces (150-1000m²)
+        elif height >= 4 and area >= 150:
+            hvls = self.fan_database["High Volume Low Speed (HVLS)"]
+            for size in ["20ft", "16ft", "12ft", "10ft", "8ft"]:
+                if size in hvls["coverage_area_m2"] and hvls["coverage_area_m2"][size] >= area * 0.8:
+                    num_fans = math.ceil(area / hvls["coverage_area_m2"][size])
                     recommendations.append({
-                        "type": "HVLS Fan",
+                        "type": f"HVLS Fan ({size})",
                         "size": size,
-                        "quantity": num,
-                        "power": num * hvls["power_watts"][size],
-                        "airflow": num * hvls["airflow_cfm"][size],
+                        "quantity": num_fans,
+                        "power": num_fans * hvls["power_watts"][size],
+                        "airflow": num_fans * hvls["airflow_cfm"][size],
                         "mounting": hvls["mounting_height"]
                     })
                     break
         
-        # Ceiling fans for smaller spaces
-        elif height <= 4:
+        # Ceiling fans for medium spaces
+        elif height <= 4 and area <= 500:
             fan_type = "Ceiling Fan (Commercial)" if area > 100 else "Ceiling Fan (Residential)"
             fan = self.fan_database[fan_type]
             num = math.ceil(area / fan["coverage_area_m2"])
@@ -812,919 +970,7 @@ class SGProEngine:
                 "mounting": fan["mounting_height"]
             })
         
-        # Exhaust fans for certain rooms
-        if room_type in ["Toilet / Bathroom", "Kitchen (Commercial)", "Plant Room"]:
-            exhaust = self.fan_database["Exhaust Fan (Wall/Ceiling)"]
-            num = math.ceil(required_cfm / 800)  # Using largest exhaust fan CFM
-            recommendations.append({
-                "type": "Exhaust Fan",
-                "quantity": num,
-                "power": num * 80,  # 80W per fan
-                "airflow": num * 800,
-                "purpose": "Mechanical ventilation"
-            })
-        
-        return {
-            "area": area,
-            "volume": volume,
-            "ach_required": ach,
-            "required_cfm": required_cfm,
-            "recommendations": recommendations,
-            "total_power": sum(r["power"] for r in recommendations)
-        }
-    
-    # ==================== GENERATOR SIZING ====================
-    
-    def calculate_generator(self, essential_loads, fire_loads, motor_starting_kva):
-        """Calculate generator size"""
-        running_kva = sum(essential_loads) + sum(fire_loads)
-        other_running = running_kva - motor_starting_kva
-        starting_kva = other_running + motor_starting_kva
-        
-        required = max(running_kva, starting_kva) * 1.2  # 20% safety
-        
-        # Standard sizes
-        std_sizes = [20, 30, 45, 60, 80, 100, 125, 150, 200, 250, 300, 400, 500, 630]
-        recommended = next((x for x in std_sizes if x >= required), required)
-        
-        return {
-            "required_kva": round(required, 1),
-            "recommended_kva": recommended,
-            "running_kva": round(running_kva, 1),
-            "starting_kva": round(starting_kva, 1)
-        }
-    
-    # ==================== LIGHTNING PROTECTION ====================
-    
-    def calculate_lightning(self, length, width, height, level="Level III", roof="Flat"):
-        """Calculate lightning protection requirements"""
-        area = length * width
-        perimeter = 2 * (length + width)
-        
-        spacing = self.air_terminal_spacing[level]
-        if height < 10:
-            term_spacing = spacing["low"]
-        elif height < 20:
-            term_spacing = spacing["medium"]
-        else:
-            term_spacing = spacing["high"]
-        
-        # Calculate terminals
-        term_length = math.ceil(length / term_spacing) + 1
-        term_width = math.ceil(width / term_spacing) + 1
-        
-        if roof == "Flat":
-            num_terminals = term_length * term_width
-        else:
-            num_terminals = term_length * 2 + term_width
-        
-        # Down conductors (every 20m)
-        num_down = max(2, math.ceil(perimeter / 20))
-        
-        return {
-            "area": area,
-            "perimeter": perimeter,
-            "num_terminals": num_terminals,
-            "num_down_conductors": num_down,
-            "num_test_joints": num_down,
-            "terminal_spacing": term_spacing,
-            "protection_params": self.lightning_protection_levels[level]
-        }
-    
-    # ==================== CABLE TRAY SIZING ====================
-    
-    def calculate_tray(self, cables, tray_depth=50, tray_type="perforated", spare=0.25):
-        """Calculate cable tray size"""
-        total_area = 0
-        cable_details = []
-        
-        for cable_size in cables:
-            if cable_size in self.cable_diameters:
-                diameter = self.cable_diameters[cable_size]
-                area = math.pi * (diameter/2)**2
-                total_area += area
-                cable_details.append({
-                    "size": cable_size,
-                    "diameter": diameter,
-                    "area": round(area, 0)
-                })
-        
-        # Apply spare and fill factor
-        total_with_spare = total_area * (1 + spare)
-        fill_factor = self.tray_fill_factors.get(tray_type, 0.4)
-        required_width = total_with_spare / (tray_depth * fill_factor)
-        
-        # Select standard size
-        selected = next((w for w in self.standard_tray_sizes if w >= required_width), 
-                       self.standard_tray_sizes[-1])
-        
-        actual_fill = (total_area / (selected * tray_depth)) * 100
-        
-        return {
-            "total_area": round(total_area),
-            "required_width": round(required_width, 1),
-            "selected_width": selected,
-            "actual_fill": round(actual_fill, 1),
-            "fill_factor": fill_factor * 100,
-            "cable_details": cable_details
-        }
-    
-    # ==================== EARTHING DESIGN ====================
-    
-    def calculate_earth_pits(self, building_area, has_fuel=True, soil="Normal", level="Level III"):
-        """Calculate earth pit requirements"""
-        pits = {
-            "generator": 2,
-            "fuel_tank": 1 if has_fuel else 0,
-            "lightning": 0
-        }
-        
-        if soil == "Poor":
-            pits["generator"] = 3
-        
-        # Lightning pits based on area
-        if building_area <= 500:
-            pits["lightning"] = 2
-        elif building_area <= 2000:
-            pits["lightning"] = 4
-        elif building_area <= 5000:
-            pits["lightning"] = 6
-        else:
-            pits["lightning"] = 8 + math.ceil((building_area - 5000) / 2000)
-        
-        # Apply protection level multiplier
-        multiplier = {"Level I": 1.5, "Level II": 1.2, "Level III": 1.0, "Level IV": 0.8}
-        pits["lightning"] = math.ceil(pits["lightning"] * multiplier[level])
-        
-        pits["total"] = sum(pits.values())
-        return pits
-    
-    # ==================== MAINTENANCE & PREDICTIVE ====================
-    
-    def predict_maintenance(self, equipment, hours_used, last_service):
-        """Predict maintenance needs"""
-        lifetime = self.equipment_lifetime.get(equipment, 10)
-        
-        if isinstance(lifetime, int) and lifetime > 100:  # Hours-based
-            remaining = lifetime - hours_used
-            if remaining < 1000:
-                status = "Critical"
-            elif remaining < 5000:
-                status = "Warning"
-            else:
-                status = "Good"
-            next_maint = f"After {remaining} hours"
-        else:  # Years-based
-            years = (datetime.now() - last_service).days / 365
-            remaining = lifetime - years
-            if remaining < 1:
-                status = "Critical"
-            elif remaining < 3:
-                status = "Warning"
-            else:
-                status = "Good"
-            next_maint = f"Due in {remaining:.1f} years"
-        
-        return {
-            "equipment": equipment,
-            "status": status,
-            "next_maintenance": next_maint,
-            "recommendations": self._get_recommendations(equipment, status)
-        }
-    
-    def _get_recommendations(self, equipment, status):
-        """Get maintenance recommendations"""
-        base = {
-            "LED Lighting": ["Clean fixtures", "Check for flickering", "Verify lux levels"],
-            "MCB/MCCB": ["Exercise breakers", "Thermal imaging", "Check for tripping"],
-            "Generator": ["Change oil", "Check coolant", "Test under load"],
-            "UPS Battery": ["Load test", "Check electrolyte", "Clean terminals"],
-            "EV Charger": ["Check cable condition", "Test emergency stop", "Verify charging performance", "Check thermal imaging"]
-        }
-        
-        recs = base.get(equipment, ["General inspection"])
-        
-        if status == "Critical":
-            recs.append("IMMEDIATE ACTION REQUIRED")
-            recs.append("Order replacement parts")
-        elif status == "Warning":
-            recs.append("Schedule maintenance soon")
-        
-        return recs
-    
-    def generate_schedule(self, equipment_list, start_date):
-        """Generate maintenance schedule"""
-        schedule = []
-        current = datetime.strptime(start_date, "%Y-%m-%d")
-        
-        for eq in equipment_list:
-            for period, tasks in self.maintenance_templates.items():
-                for task in tasks:
-                    if period == "daily":
-                        due = current
-                    elif period == "weekly":
-                        due = current + timedelta(days=7 - current.weekday())
-                    elif period == "monthly":
-                        due = current.replace(day=1) + timedelta(days=32)
-                        due = due.replace(day=1)
-                    elif period == "quarterly":
-                        due = current + timedelta(days=90)
-                    else:
-                        due = current.replace(year=current.year + 1)
-                    
-                    schedule.append({
-                        "equipment": eq["type"],
-                        "location": eq["location"],
-                        "task": task["task"],
-                        "due": due.strftime("%Y-%m-%d"),
-                        "criticality": task["criticality"]
-                    })
-        
-        return sorted(schedule, key=lambda x: x["due"])
-    
-    # ==================== ENERGY OPTIMIZATION ====================
-    
-    def optimize_energy(self, load_profile):
-        """Calculate energy optimization opportunities"""
-        peak = max(load_profile)
-        avg = sum(load_profile) / len(load_profile)
-        
-        # Peak shaving potential
-        if peak > avg * 1.5:
-            battery = (peak - avg) * 2
-            peak_shaving = True
-        else:
-            battery = 0
-            peak_shaving = False
-        
-        # Savings calculation
-        peak_hours = 4
-        shed = peak * 0.2
-        daily_savings = shed * peak_hours * self.energy_tariffs["peak"]["rate"]
-        
-        return {
-            "peak_load": round(peak, 1),
-            "avg_load": round(avg, 1),
-            "peak_shaving": peak_shaving,
-            "battery_kwh": round(battery, 1),
-            "daily_savings": round(daily_savings, 2),
-            "annual_savings": round(daily_savings * 365, 2),
-            "recommendations": [
-                "Install smart lighting controls",
-                "Use VFDs for motors",
-                "Schedule heavy loads during off-peak",
-                "Implement smart EV charging to shift load to off-peak hours"
-            ]
-        }
-    
-    # ==================== QR CODE / ASSET TAGGING ====================
-    
-    def generate_asset_tag(self, asset_type, location):
-        """Generate asset tag data"""
-        asset_id = hashlib.md5(f"{asset_type}{location}{random.random()}".encode()).hexdigest()[:8]
-        return {
-            "asset_id": f"ELEC-{asset_id}",
-            "type": asset_type,
-            "location": location,
-            "install_date": datetime.now().strftime("%Y-%m-%d"),
-            "qr_data": f"https://maintenance.electrical.com/asset/{asset_id}"
-        }
-
-# ==================== STREAMLIT UI ====================
-
-st.set_page_config(page_title="SG Electrical Design Pro", layout="wide")
-engine = SGProEngine()
-
-# Sidebar
-with st.sidebar:
-    st.image("https://img.icons8.com/color/96/000000/electrical.png", width=50)
-    st.title("SG Electrical Pro")
-    st.markdown("---")
-    
-    st.subheader("Project Info")
-    project = st.text_input("Project Name", "My Building", key="project_name")
-    location = st.text_input("Location", "Singapore", key="project_location")
-    
-    st.markdown("---")
-    st.subheader("User Role")
-    role = st.selectbox("Select Role", ["Installer", "Engineer", "Facility Manager"], key="user_role")
-    
-    st.markdown("---")
-    st.info("Compliant with SS 638, SS 531, SS 555")
-    
-    # ==================== PAYPAL DONATION SECTION ====================
-    st.markdown("---")
-    st.markdown("### ☕ Support Development")
-    st.markdown("If you find this tool useful, consider supporting continued development:")
-    
-    # PayPal donation button
-    paypal_url = "https://www.paypal.com/ncp/payment/C9S8JD4XC6F4E"
-    
-    # Create a styled donation button
-    st.markdown(
-        f"""
-        <div style="display: flex; justify-content: center; margin: 20px 0;">
-            <a href="{paypal_url}" target="_blank">
-                <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" 
-                     alt="Donate with PayPal" 
-                     style="border: none; cursor: pointer; width: 150px;">
-            </a>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    # Alternative text link
-    st.markdown(f"[💰 Click here to donate via PayPal]({paypal_url})")
-    
-    # Thank you message
-    st.markdown("🙏 Thank you for your support!")
-    
-    st.markdown("---")
-    st.markdown("**Version:** 3.1 (with EV Charger Support)")
-    st.markdown("**Last Updated:** 2024")
-
-# Main tabs
-tabs = st.tabs([
-    "🏢 Room Design",
-    "🔌 Cable & Tray",
-    "🔄 Generator",
-    "⚡ Lightning",
-    "⛓️ Earthing",
-    "📊 MSB Design",
-    "🚗 EV Chargers",
-    "🛠️ Maintenance",
-    "📈 Analytics"
-])
-
-# ==================== TAB 1: ROOM DESIGN ====================
-with tabs[0]:
-    st.header("Complete Room Electrical Design")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Room Parameters")
-        
-        room_type = st.selectbox("Room Type", list(engine.lighting_standards.keys()), key="room_type_tab1")
-        
-        col_dim1, col_dim2, col_dim3 = st.columns(3)
-        with col_dim1:
-            length = st.number_input("Length (m)", 1.0, 50.0, 10.0, key="room_length")
-        with col_dim2:
-            width = st.number_input("Width (m)", 1.0, 50.0, 8.0, key="room_width")
-        with col_dim3:
-            height = st.number_input("Height (m)", 2.0, 20.0, 3.0, key="room_height")
-        
-        ac_status = st.radio("AC Status", ["Air Conditioned", "Non-AC"], key="ac_status")
-        
-        include_lighting = st.checkbox("Include Lighting", True, key="inc_lighting")
-        include_sockets = st.checkbox("Include Sockets", True, key="inc_sockets")
-        include_fans = st.checkbox("Include Fans", True, key="inc_fans")
-        
-        if st.button("Calculate Room Design", type="primary", key="calc_room"):
-            with col2:
-                st.subheader("Design Results")
-                
-                total_load = 0
-                
-                # Lighting
-                if include_lighting:
-                    st.write("### 💡 Lighting")
-                    lighting = engine.calculate_lighting(room_type, length, width, height)
-                    if lighting:
-                        col_l1, col_l2, col_l3 = st.columns(3)
-                        col_l1.metric("Fittings", lighting['num_fittings'])
-                        col_l2.metric("Load", f"{lighting['total_watts']}W")
-                        col_l3.metric("Lux", f"{lighting['lux_achieved']:.0f}")
-                        
-                        st.write(f"**Type:** {lighting['fitting_type']}")
-                        st.write(f"**Layout:** {lighting['fittings_length']} × {lighting['fittings_width']}")
-                        st.write(f"**Color:** {lighting['color_temp']}")
-                        
-                        total_load += lighting['total_watts']
-                
-                # Sockets
-                if include_sockets:
-                    st.write("### 🔌 Sockets")
-                    sockets = engine.calculate_sockets(room_type, length, width)
-                    if sockets:
-                        col_s1, col_s2, col_s3 = st.columns(3)
-                        col_s1.metric("Sockets", sockets['num_sockets'])
-                        col_s2.metric("Circuits", sockets['num_circuits'])
-                        col_s3.metric("Load", f"{sockets['total_load_watts']/1000:.1f}kW")
-                        
-                        st.write(f"**Type:** {sockets['socket_type']}")
-                        st.write(f"**Current/Phase:** {sockets['current_per_phase']}A")
-                        
-                        total_load += sockets['total_load_watts']
-                
-                # Fans
-                if include_fans:
-                    st.write("### 🌀 Fans")
-                    fans = engine.calculate_fans(room_type, length, width, height, "Air Conditioned" in ac_status)
-                    if fans and fans['recommendations']:
-                        st.metric("Required Airflow", f"{fans['required_cfm']:.0f} CFM")
-                        for fan in fans['recommendations']:
-                            st.write(f"**{fan['type']}:** {fan['quantity']} units, {fan['power']}W")
-                            total_load += fan['power']
-                
-                # Isolators
-                st.write("### 🔒 Isolators")
-                equipment = []
-                if include_lighting:
-                    equipment.append("lighting")
-                if include_sockets:
-                    equipment.append("sockets")
-                
-                isolators = engine.get_isolators(room_type, equipment)
-                for iso in isolators[:3]:  # Show first 3
-                    st.write(f"**{iso['equipment']}:** {iso['type']}")
-                
-                # Total Load Summary
-                st.success(f"### 📊 Total Room Load: {total_load/1000:.2f} kW")
-
-# ==================== TAB 2: CABLE & TRAY ====================
-with tabs[1]:
-    st.header("Cable & Tray Sizing")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Voltage Drop Calculator")
-        
-        cable_size = st.selectbox("Cable Size (mm²)", list(engine.cable_impedance.keys()), key="vd_cable_size")
-        current = st.number_input("Load Current (A)", 1.0, 1000.0, 100.0, key="vd_current")
-        distance = st.number_input("Cable Length (m)", 1.0, 500.0, 50.0, key="vd_distance")
-        pf = st.slider("Power Factor", 0.7, 1.0, 0.85, key="vd_pf")
-        
-        if st.button("Calculate Voltage Drop", key="calc_vd"):
-            vd, vd_pct = engine.calculate_voltage_drop(cable_size, current, distance, pf)
-            
-            with col2:
-                st.subheader("Results")
-                if vd is not None:
-                    st.metric("Voltage Drop", f"{vd}V")
-                    st.metric("Percentage", f"{vd_pct}%")
-                    
-                    if vd_pct <= 4:
-                        st.success("✅ Within acceptable limit (4%)")
-                    else:
-                        st.error("❌ Exceeds 4% limit - use larger cable")
-    
-    st.divider()
-    
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        st.subheader("Cable Tray Sizing")
-        
-        num_cables = st.number_input("Number of Cable Types", 1, 5, 2, key="tray_num_cables")
-        cables = []
-        
-        for i in range(num_cables):
-            col_c, col_q = st.columns(2)
-            with col_c:
-                size = st.selectbox(f"Cable {i+1} Size", list(engine.cable_diameters.keys()), key=f"tray_cable_{i}")
-            with col_q:
-                qty = st.number_input(f"Qty {i+1}", 1, 100, 3, key=f"tray_qty_{i}")
-            
-            for _ in range(qty):
-                cables.append(size)
-        
-        tray_depth = st.selectbox("Tray Depth (mm)", [50, 75, 100, 150], key="tray_depth")
-        tray_type = st.selectbox("Tray Type", ["perforated", "ladder", "solid"], key="tray_type")
-        spare = st.slider("Spare Capacity %", 0, 50, 25, key="tray_spare") / 100
-        
-        if st.button("Size Tray", key="calc_tray"):
-            result = engine.calculate_tray(cables, tray_depth, tray_type, spare)
-            
-            with col4:
-                st.subheader("Tray Results")
-                st.metric("Total Cable Area", f"{result['total_area']} mm²")
-                st.metric("Required Width", f"{result['required_width']} mm")
-                st.metric("Selected Tray", f"{result['selected_width']} mm")
-                st.metric("Fill Percentage", f"{result['actual_fill']}%")
-                
-                if result['actual_fill'] <= result['fill_factor']:
-                    st.success("✅ Tray size OK")
-                else:
-                    st.error("❌ Tray overfilled - increase size")
-
-# ==================== TAB 3: GENERATOR ====================
-with tabs[2]:
-    st.header("Generator Sizing")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Essential Loads")
-        
-        num_lifts = st.number_input("Number of Lifts", 0, 10, 2, key="gen_num_lifts")
-        essential = []
-        starting = []
-        
-        for i in range(num_lifts):
-            lift_kw = st.number_input(f"Lift {i+1} (kW)", 0.0, 100.0, 10.0, key=f"gen_lift_{i}")
-            running = lift_kw / 0.85  # Approx kVA
-            essential.append(running)
-            starting.append(running * 2.5)  # Starting multiplier
-        
-        num_ess = st.number_input("Other Essential Loads", 0, 10, 2, key="gen_num_ess")
-        for i in range(num_ess):
-            load = st.number_input(f"Essential Load {i+1} (kVA)", 0.0, 100.0, 5.0, key=f"gen_ess_{i}")
-            essential.append(load)
-    
-    with col2:
-        st.subheader("Fire Loads")
-        
-        has_pump = st.checkbox("Include Fire Pump", True, key="gen_has_pump")
-        fire = []
-        fire_start = []
-        
-        if has_pump:
-            pump_kw = st.number_input("Fire Pump (kW)", 0.0, 200.0, 30.0, key="gen_pump_kw")
-            pump_type = st.selectbox("Starting Type", ["Direct Online", "Star-Delta", "Soft Starter"], key="gen_pump_type")
-            
-            running = pump_kw / 0.85
-            multiplier = {"Direct Online": 6.0, "Star-Delta": 3.5, "Soft Starter": 2.5}[pump_type]
-            
-            fire.append(running)
-            fire_start.append(running * multiplier)
-        
-        num_fans = st.number_input("Pressurization Fans", 0, 10, 2, key="gen_num_fans")
-        for i in range(num_fans):
-            fan_kw = st.number_input(f"Fan {i+1} (kW)", 0.0, 50.0, 5.5, key=f"gen_fan_{i}")
-            running = fan_kw / 0.85
-            fire.append(running)
-            fire_start.append(running * 3.0)  # Fan starting
-    
-    if st.button("Size Generator", key="calc_gen"):
-        all_start = starting + fire_start
-        largest = max(all_start) if all_start else 0
-        
-        gen = engine.calculate_generator(essential, fire, largest)
-        
-        st.success(f"### Recommended Generator: {gen['recommended_kva']} kVA")
-        
-        col_g1, col_g2, col_g3 = st.columns(3)
-        col_g1.metric("Running Load", f"{gen['running_kva']} kVA")
-        col_g2.metric("Starting Load", f"{gen['starting_kva']} kVA")
-        col_g3.metric("Required", f"{gen['required_kva']} kVA")
-
-# ==================== TAB 4: LIGHTNING ====================
-with tabs[3]:
-    st.header("Lightning Protection")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Building Parameters")
-        
-        b_length = st.number_input("Length (m)", 1.0, 200.0, 50.0, key="lp_length")
-        b_width = st.number_input("Width (m)", 1.0, 200.0, 30.0, key="lp_width")
-        b_height = st.number_input("Height (m)", 1.0, 100.0, 15.0, key="lp_height")
-        b_roof = st.selectbox("Roof Type", ["Flat", "Pitched"], key="lp_roof")
-        b_level = st.selectbox("Protection Level", ["Level I", "Level II", "Level III", "Level IV"], index=2, key="lp_level")
-        
-        if st.button("Calculate Lightning Protection", key="calc_lp"):
-            lp = engine.calculate_lightning(b_length, b_width, b_height, b_level, b_roof)
-            
-            with col2:
-                st.subheader("Results")
-                
-                col_l1, col_l2, col_l3 = st.columns(3)
-                col_l1.metric("Air Terminals", lp['num_terminals'])
-                col_l2.metric("Down Conductors", lp['num_down_conductors'])
-                col_l3.metric("Test Joints", lp['num_test_joints'])
-                
-                st.write(f"**Building Area:** {lp['area']:.0f} m²")
-                st.write(f"**Terminal Spacing:** {lp['terminal_spacing']} m")
-                st.write(f"**Protection Angle:** {lp['protection_params']['protection_angle']}°")
-                st.write(f"**Mesh Size:** {lp['protection_params']['mesh_size']} m")
-
-# ==================== TAB 5: EARTHING ====================
-with tabs[4]:
-    st.header("Earthing System")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Earth Pit Calculation")
-        
-        b_area = st.number_input("Building Area (m²)", 1.0, 10000.0, 1500.0, key="earth_area")
-        has_fuel = st.checkbox("Has Fuel Tank", True, key="earth_fuel")
-        soil = st.selectbox("Soil Condition", ["Normal", "Poor"], key="earth_soil")
-        level = st.selectbox("Protection Level", ["Level I", "Level II", "Level III", "Level IV"], index=2, key="earth_level")
-        
-        if st.button("Calculate Earth Pits", key="calc_earth"):
-            pits = engine.calculate_earth_pits(b_area, has_fuel, soil, level)
-            
-            with col2:
-                st.subheader("Results")
-                
-                col_p1, col_p2, col_p3 = st.columns(3)
-                col_p1.metric("Generator", f"{pits['generator']} pits")
-                col_p2.metric("Fuel Tank", f"{pits['fuel_tank']} pits")
-                col_p3.metric("Lightning", f"{pits['lightning']} pits")
-                
-                st.success(f"### Total Required: {pits['total']} earth pits")
-                
-                st.info("**Specifications:**")
-                st.write("- Depth: 3m minimum")
-                st.write("- Electrode: 20mm φ copper-clad")
-                st.write("- Resistance: <1Ω combined")
-
-# ==================== TAB 6: MSB DESIGN ====================
-with tabs[5]:
-    st.header("Main Switchboard Design")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Incomer Sizing")
-        
-        total_load = st.number_input("Total Load (kW)", 1.0, 2000.0, 400.0, key="msb_load")
-        pf = st.slider("Power Factor", 0.7, 1.0, 0.85, key="msb_pf")
-        voltage = 400
-        
-        ib = (total_load * 1000) / (math.sqrt(3) * voltage * pf)
-        
-        at, af = engine.get_at_af(ib)
-        breaker_type = "ACB" if af >= 800 else "MCCB" if af > 63 else "MCB"
-        
-        st.metric("Design Current (Ib)", f"{ib:.1f} A")
-        st.success(f"**Incomer:** {at}AT / {af}AF {breaker_type}")
-        
-        # Cable selection
-        cable_len = st.number_input("Cable Length (m)", 1.0, 200.0, 50.0, key="msb_cable_len")
-        max_vd = st.slider("Max V.D. %", 1.0, 8.0, 4.0, key="msb_max_vd")
-        
-        cable = engine.select_cable(ib, cable_len, pf, max_vd)
-        
-        if "error" in cable:
-            st.error(cable["error"])
-        else:
-            st.write(f"**Cable:** {cable['size']} mm² (Iz={cable['iz']}A)")
-            st.write(f"**V.D.:** {cable['vd']}V ({cable['vd_percent']}%)")
-            if "warning" in cable:
-                st.warning(cable["warning"])
-    
-    with col2:
-        st.subheader("Physical Layout")
-        
-        num_feeder = st.number_input("No. of Feeders", 1, 20, 5, key="msb_feeders")
-        width = (800 if breaker_type == "ACB" else 600) + num_feeder * 400
-        width = width * 1.2  # 20% spare
-        
-        st.metric("Estimated Width", f"{width:.0f} mm")
-        
-        st.write("**Clearance Requirements:**")
-        clearances = pd.DataFrame({
-            "Position": ["Front", "Rear", "Sides", "Top"],
-            "Min (mm)": [1500, 800, 800, 500]
-        })
-        st.table(clearances)
-
-# ==================== TAB 7: EV CHARGERS ====================
-with tabs[6]:
-    st.header("🚗 EV Charger Infrastructure Design")
-    st.write("Design EV charging stations based on 15% of total carpark lots (7kW per charger)")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("EV Charger Parameters")
-        
-        total_carpark_lots = st.number_input("Total Carpark Lots", 10, 1000, 200, key="ev_total_lots")
-        charger_type = st.selectbox("Charger Type", 
-                                   ["AC Level 2 (7kW)", "AC Fast (22kW)", "DC Fast (50kW)"], 
-                                   key="ev_charger_type")
-        
-        # Map display name to internal type
-        charger_type_map = {
-            "AC Level 2 (7kW)": "AC Level 2",
-            "AC Fast (22kW)": "AC Fast",
-            "DC Fast (50kW)": "DC Fast"
-        }
-        
-        selected_type = charger_type_map[charger_type]
-        
-        # Override power per charger based on selected type
-        if selected_type == "AC Level 2":
-            power_per_charger = 7
-        elif selected_type == "AC Fast":
-            power_per_charger = 22
-        else:
-            power_per_charger = 50
-        
-        st.info(f"**Requirement:** 15% of {total_carpark_lots} lots = {math.ceil(total_carpark_lots * 0.15)} chargers minimum")
-        
-        include_ev = st.checkbox("Include EV Chargers in Load Calculation", True, key="inc_ev")
-        
-        if st.button("Calculate EV Infrastructure", type="primary", key="calc_ev"):
-            with col2:
-                st.subheader("EV Charger Results")
-                
-                # Override the config for this calculation
-                engine.ev_charger_config["power_per_charger_kw"] = power_per_charger
-                
-                ev = engine.calculate_ev_chargers(total_carpark_lots, selected_type)
-                
-                # Key metrics
-                col_ev1, col_ev2, col_ev3 = st.columns(3)
-                col_ev1.metric("EV Chargers Required", ev['num_chargers'])
-                col_ev2.metric("Total Load", f"{ev['total_load_kw']} kW")
-                col_ev3.metric("Diversified Load", f"{ev['diversified_load_kw']} kW")
-                
-                # Detailed results
-                st.write("### 📊 Detailed Analysis")
-                
-                results_df = pd.DataFrame([
-                    ["Number of Chargers", ev['num_chargers']],
-                    ["Power per Charger", f"{ev['power_per_charger_kw']} kW"],
-                    ["Total Connected Load", f"{ev['total_load_kw']} kW"],
-                    ["Diversified Load (60%)", f"{ev['diversified_load_kw']} kW"],
-                    ["Total Current", f"{ev['total_current_a']} A"],
-                    ["Number of Circuits", ev['num_circuits']],
-                    ["Chargers per Circuit", ev['chargers_per_circuit']],
-                    ["Annual Energy Consumption", f"{ev['annual_energy_kwh']:,.0f} kWh"]
-                ], columns=["Parameter", "Value"])
-                
-                st.table(results_df)
-                
-                # Circuit requirements
-                st.write("### 🔌 Circuit Requirements")
-                st.write(f"- **Circuits Needed:** {ev['num_circuits']} × 3-phase circuits")
-                st.write(f"- **Circuit Rating:** 32A minimum (for AC chargers)")
-                st.write(f"- **Cable Size:** 6mm² or 10mm² per charger (depending on distance)")
-                st.write(f"- **Protection:** Type B RCD (30mA) for DC leakage detection")
-                
-                # Load contribution
-                st.write("### ⚡ Load Contribution")
-                st.write(f"**EV Charger Load (Diversified):** {ev['diversified_load_kw']} kW")
-                st.write(f"**EV Charger Load (Peak):** {ev['total_load_kw']} kW")
-                
-                # Recommendations
-                st.write("### 💡 Recommendations")
-                for rec in ev['recommendations']:
-                    st.write(f"- {rec}")
-                
-                # Isolator requirements
-                st.write("### 🔒 Isolator Requirements")
-                st.write("- **Each Charger:** 40A/63A DP Isolator with switch")
-                st.write("- **Location:** Adjacent to charger, accessible")
-                st.write("- **Type:** Weatherproof (IP66) for outdoor installations")
-                
-                # Asset tag
-                tag = engine.generate_asset_tag("EV Charging Station", f"Carpark Level")
-                st.write("### 🏷️ Asset Tag")
-                st.code(f"Asset ID: {tag['asset_id']}")
-                
-                # If included in total load
-                if include_ev:
-                    st.success(f"✅ EV Charger load of {ev['diversified_load_kw']} kW added to building total")
-
-# ==================== TAB 8: MAINTENANCE ====================
-with tabs[7]:
-    st.header("Maintenance Management")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Predictive Maintenance")
-        
-        equip = st.selectbox("Equipment", list(engine.equipment_lifetime.keys()), key="maint_equip")
-        hours = st.slider("Operating Hours", 0, 50000, 10000, key="maint_hours")
-        last = st.date_input("Last Service", datetime.now() - timedelta(days=180), key="maint_last")
-        
-        if st.button("Check Status", key="check_maint"):
-            pred = engine.predict_maintenance(equip, hours, datetime.combine(last, datetime.min.time()))
-            
-            with col2:
-                st.subheader("Equipment Health")
-                
-                status_color = {"Good": "🟢", "Warning": "🟡", "Critical": "🔴"}
-                st.metric("Status", f"{status_color.get(pred['status'], '⚪')} {pred['status']}")
-                st.write(f"**Next:** {pred['next_maintenance']}")
-                
-                st.write("**Recommendations:**")
-                for rec in pred['recommendations']:
-                    st.write(f"- {rec}")
-                
-                if pred['status'] == "Critical":
-                    st.error("⚠️ Immediate action required!")
-    
-    st.divider()
-    
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        st.subheader("Maintenance Schedule")
-        
-        equipment_list = [
-            {"type": "Generator", "location": "Gen Room"},
-            {"type": "UPS Battery", "location": "Elec Room"},
-            {"type": "MCB/MCCB", "location": "MSB"},
-            {"type": "EV Charger", "location": "Carpark"}
-        ]
-        
-        schedule = engine.generate_schedule(equipment_list, datetime.now().strftime("%Y-%m-%d"))
-        
-        # Show next 5 tasks
-        for task in schedule[:5]:
-            st.write(f"**{task['due']}:** {task['task']}")
-            st.write(f"_{task['equipment']} - {task['criticality']}_")
-            st.divider()
-    
-    with col4:
-        st.subheader("Asset Tags")
-        
-        asset_types = ["Generator", "MSB", "Lighting Panel", "Fire Pump", "EV Charger"]
-        for asset in asset_types:
-            tag = engine.generate_asset_tag(asset, "Site")
-            st.write(f"**{asset}:** {tag['asset_id']}")
-            st.code(tag['qr_data'], language=None)
-
-# ==================== TAB 9: ANALYTICS ====================
-with tabs[8]:
-    st.header("Energy Analytics")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Load Profile")
-        
-        # Generate sample data with EV charging impact
-        hours = list(range(24))
-        base_load = [100 + 50 * math.sin(i/4) + random.uniform(-10, 10) for i in hours]
-        
-        # Add EV charging load (assuming 8pm-6am charging)
-        ev_load = [0] * 24
-        for i in range(20, 24):  # 8pm-12am
-            ev_load[i] = 50 * random.uniform(0.5, 1.0)
-        for i in range(0, 6):  # 12am-6am
-            ev_load[i] = 50 * random.uniform(0.3, 0.8)
-        
-        total_load = [base + ev for base, ev in zip(base_load, ev_load)]
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=hours, y=base_load, mode='lines', name='Base Load'))
-        fig.add_trace(go.Scatter(x=hours, y=total_load, mode='lines', name='With EV Charging'))
-        fig.update_layout(title="Daily Load Profile with EV Charging",
-                         xaxis_title="Hour", yaxis_title="Load (kW)")
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        st.subheader("Optimization")
-        
-        opt = engine.optimize_energy(total_load)
-        
-        col_o1, col_o2 = st.columns(2)
-        col_o1.metric("Peak Load", f"{opt['peak_load']} kW")
-        col_o2.metric("Avg Load", f"{opt['avg_load']} kW")
-        
-        st.metric("Annual Savings Potential", f"${opt['annual_savings']:,.0f}")
-        
-        if opt['peak_shaving']:
-            st.info(f"💡 Consider {opt['battery_kwh']} kWh battery for peak shaving")
-        
-        st.write("**Recommendations:**")
-        for rec in opt['recommendations']:
-            st.write(f"- {rec}")
-    
-    st.divider()
-    
-    st.subheader("Cost Analysis")
-    
-    # Tariff table
-    tariff_df = pd.DataFrame([
-        {"Period": k.replace('_', ' ').title(), 
-         "Time": v["time"], 
-         "Rate ($/kWh)": v["rate"]}
-        for k, v in engine.energy_tariffs.items()
-    ])
-    st.table(tariff_df)
-    
-    # EV Charging specific analytics
-    st.subheader("🚗 EV Charging Analytics")
-    
-    col_ev1, col_ev2, col_ev3 = st.columns(3)
-    with col_ev1:
-        st.metric("EV Energy per Day", "400 kWh")
-    with col_ev2:
-        st.metric("EV Energy per Month", "12,000 kWh")
-    with col_ev3:
-        st.metric("EV Energy Cost (Off-peak)", "$1,800/month")
-
-# Footer
-st.markdown("---")
-col_footer1, col_footer2, col_footer3 = st.columns([1, 2, 1])
-with col_footer2:
-    st.markdown("""
-    <div style="text-align: center">
-        <p>© SG Electrical Design Pro | Compliant with Singapore Standards SS 638, SS 531, SS 555 | Version 3.1</p>
-        <p style="font-size: 12px;">Made with ❤️ for the electrical engineering community</p>
-        <p style="font-size: 12px;">🚗 EV Charger calculations based on 15% requirement (7kW per charger)</p>
-    </div>
-    """, unsafe_allow_html=True)
+        # Wall mounted fans for workshops, kitchens
+        if "Kitchen" in room_type or "Workshop" in room_type or "Factory" in room_type:
+            wall = self.fan_database["Wall Mounted Fan (Oscillating)"]
+            num = math.ceil(area / 100) 
