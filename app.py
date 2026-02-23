@@ -9,7 +9,478 @@ import random
 import json
 
 class SGProEngine:
+    def __init__(self):aimport streamlit as st
+import math
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from datetime import datetime, timedelta
+import hashlib
+import random
+
+# Page config must be the first Streamlit command
+st.set_page_config(
+    page_title="SG Electrical Design Pro", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ==================== CLASS DEFINITION ====================
+class SGProEngine:
     def __init__(self):
+        # Standard AT/AF Mapping
+        self.standard_frames = [63, 100, 125, 160, 250, 400, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000]
+        self.standard_trips = [6, 10, 16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000]
+        
+        # Cable Database
+        self.cable_db = {
+            1.5: 25, 2.5: 33, 4: 43, 6: 56, 10: 77, 16: 102, 25: 135, 35: 166, 
+            50: 201, 70: 255, 95: 309, 120: 358, 150: 410, 185: 469, 240: 551, 300: 627
+        }
+        
+        # Lighting Standards (simplified for now)
+        self.lighting_standards = {
+            "Office": {"lux": 400, "watt_per_m2": 8, "type": "LED Panel"},
+            "Meeting Room": {"lux": 500, "watt_per_m2": 12, "type": "LED Downlight"},
+            "Corridor": {"lux": 150, "watt_per_m2": 5, "type": "LED Bulkhead"},
+            "Car Park": {"lux": 75, "watt_per_m2": 3, "type": "LED Batten"},
+            "Restaurant": {"lux": 200, "watt_per_m2": 10, "type": "LED Ambient"},
+            "Kitchen": {"lux": 500, "watt_per_m2": 15, "type": "LED Vapor-tight"},
+            "Warehouse": {"lux": 200, "watt_per_m2": 6, "type": "LED Highbay"},
+            "Hawker Centre": {"lux": 300, "watt_per_m2": 10, "type": "LED Highbay"},
+            "Market": {"lux": 300, "watt_per_m2": 10, "type": "LED Highbay"},
+            "Exhibition Hall": {"lux": 300, "watt_per_m2": 12, "type": "LED Highbay"},
+            "Sports Hall": {"lux": 500, "watt_per_m2": 15, "type": "LED Sports Light"},
+            "Factory": {"lux": 300, "watt_per_m2": 10, "type": "LED Industrial"}
+        }
+        
+        # Socket Standards (simplified)
+        self.socket_standards = {
+            "Office": {"density": 8, "type": "13A 2-gang"},
+            "Meeting Room": {"density": 6, "type": "13A 2-gang + USB"},
+            "Corridor": {"density": 20, "type": "13A 1-gang"},
+            "Car Park": {"density": 100, "type": "13A IP66"},
+            "Kitchen": {"density": 5, "type": "13A/32A Industrial"},
+            "Hawker Centre": {"density": 10, "type": "13A IP66"},
+            "Market": {"density": 10, "type": "13A IP66"},
+            "Warehouse": {"density": 50, "type": "13A Heavy Duty"}
+        }
+        
+        # EV Charger Config
+        self.ev_config = {
+            "percentage": 15,
+            "power_per_charger": 7,
+            "diversity": 0.6
+        }
+        
+        # Maintenance data
+        self.equipment_lifetime = {
+            "LED Lighting": 50000,
+            "MCB/MCCB": 20,
+            "Generator": 20,
+            "UPS Battery": 5,
+            "EV Charger": 10
+        }
+
+    # Core calculation methods
+    def get_breaker(self, current):
+        """Get standard breaker rating"""
+        at = next((x for x in self.standard_trips if x >= current), 4000)
+        af = next((x for x in self.standard_frames if x >= at), 4000)
+        return at, af
+    
+    def calculate_lighting(self, room_type, length, width):
+        """Calculate lighting requirements"""
+        if room_type not in self.lighting_standards:
+            return None
+        
+        area = length * width
+        std = self.lighting_standards[room_type]
+        
+        # Simple calculation: 1 fitting per 10m² (adjust based on wattage)
+        watt_per_fitting = 40  # Typical LED fitting
+        num_fittings = math.ceil((area * std["watt_per_m2"]) / watt_per_fitting)
+        
+        return {
+            "area": area,
+            "num_fittings": num_fittings,
+            "total_watts": num_fittings * watt_per_fitting,
+            "fitting_type": std["type"],
+            "lux_achieved": std["lux"]
+        }
+    
+    def calculate_sockets(self, room_type, length, width):
+        """Calculate socket requirements"""
+        if room_type not in self.socket_standards:
+            return None
+        
+        area = length * width
+        density = self.socket_standards[room_type]["density"]
+        num_sockets = max(2, math.ceil(area / density))
+        
+        return {
+            "num_sockets": num_sockets,
+            "type": self.socket_standards[room_type]["type"],
+            "load_watts": num_sockets * 300
+        }
+    
+    def calculate_ev_chargers(self, total_lots):
+        """Calculate EV charger requirements (15% of lots)"""
+        num_chargers = math.ceil(total_lots * self.ev_config["percentage"] / 100)
+        total_load = num_chargers * self.ev_config["power_per_charger"]
+        diversified_load = total_load * self.ev_config["diversity"]
+        
+        return {
+            "num_chargers": num_chargers,
+            "total_load_kw": total_load,
+            "diversified_load_kw": diversified_load,
+            "circuits": math.ceil(num_chargers / 8)
+        }
+    
+    def predict_maintenance(self, equipment, hours, last_service):
+        """Simple maintenance prediction"""
+        lifetime = self.equipment_lifetime.get(equipment, 10)
+        
+        if isinstance(lifetime, int) and lifetime > 100:
+            remaining = lifetime - hours
+            if remaining < 1000:
+                status = "Critical"
+            elif remaining < 5000:
+                status = "Warning"
+            else:
+                status = "Good"
+        else:
+            years = (datetime.now() - last_service).days / 365
+            remaining = lifetime - years
+            if remaining < 1:
+                status = "Critical"
+            elif remaining < 3:
+                status = "Warning"
+            else:
+                status = "Good"
+        
+        return {"status": status, "remaining": remaining}
+
+# ==================== INITIALIZE ENGINE ====================
+engine = SGProEngine()
+
+# ==================== SIDEBAR ====================
+with st.sidebar:
+    st.image("https://img.icons8.com/color/96/000000/electrical.png", width=80)
+    st.title("⚡ SG Electrical Pro")
+    st.markdown("---")
+    
+    # Project Info
+    st.subheader("📋 Project Info")
+    project_name = st.text_input("Project Name", "My Building", key="sidebar_project")
+    project_location = st.text_input("Location", "Singapore", key="sidebar_location")
+    
+    # User Role
+    user_role = st.selectbox("User Role", 
+                            ["Installer", "Engineer", "Facility Manager", "Consultant"],
+                            key="sidebar_role")
+    
+    st.markdown("---")
+    
+    # Compliance Info
+    st.info("✅ Compliant with:\n- SS 638\n- SS 531\n- SS 555")
+    
+    st.markdown("---")
+    
+    # Donation Section
+    st.markdown("### ☕ Support Us")
+    st.markdown("If you find this tool useful, consider supporting development:")
+    
+    paypal_url = "https://www.paypal.com/ncp/payment/C9S8JD4XC6F4E"
+    st.markdown(f"[💰 Donate via PayPal]({paypal_url})")
+    
+    st.markdown("---")
+    st.markdown(f"**Version:** 3.2 | **Updated:** 2024")
+
+# ==================== MAIN TABS ====================
+st.title("🏗️ SG Electrical Design Professional")
+st.markdown("Complete design tool for installers, engineers, and facility managers")
+
+# Create tabs
+tab_names = [
+    "🏢 Room Design",
+    "🔌 Cable & Tray",
+    "🚗 EV Chargers",
+    "🔄 Generator",
+    "⚡ Lightning",
+    "⛓️ Earthing",
+    "📊 MSB",
+    "🛠️ Maintenance"
+]
+
+tabs = st.tabs(tab_names)
+
+# ==================== TAB 1: ROOM DESIGN ====================
+with tabs[0]:
+    st.header("Room Electrical Design")
+    st.markdown("Design lighting and socket outlets for any room type")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.subheader("Room Parameters")
+        
+        # Room selection with larger limits for industrial spaces
+        room_categories = list(engine.lighting_standards.keys())
+        selected_room = st.selectbox("Room Type", room_categories, key="room_type")
+        
+        # Increased limits for large spaces (up to 500m)
+        col_dim1, col_dim2, col_dim3 = st.columns(3)
+        with col_dim1:
+            length = st.number_input("Length (m)", 1.0, 500.0, 20.0, key="room_length")
+        with col_dim2:
+            width = st.number_input("Width (m)", 1.0, 500.0, 15.0, key="room_width")
+        with col_dim3:
+            height = st.number_input("Height (m)", 2.0, 30.0, 4.0, key="room_height")
+        
+        # AC Status
+        ac_status = st.radio("Cooling Type", 
+                            ["Air Conditioned", "Non-AC (Fan Only)"],
+                            key="ac_status")
+        
+        # Design options
+        include_lighting = st.checkbox("Include Lighting Design", True, key="inc_light")
+        include_sockets = st.checkbox("Include Socket Outlets", True, key="inc_socket")
+        
+        if st.button("Calculate Room Design", type="primary", key="calc_room"):
+            with col2:
+                st.subheader("Design Results")
+                
+                area = length * width
+                st.metric("Floor Area", f"{area:,.0f} m²")
+                
+                total_load = 0
+                
+                # Lighting Results
+                if include_lighting:
+                    st.write("### 💡 Lighting")
+                    lighting = engine.calculate_lighting(selected_room, length, width)
+                    if lighting:
+                        col_l1, col_l2, col_l3 = st.columns(3)
+                        col_l1.metric("Fittings", lighting['num_fittings'])
+                        col_l2.metric("Load", f"{lighting['total_watts']} W")
+                        col_l3.metric("Lux", lighting['lux_achieved'])
+                        
+                        st.write(f"**Type:** {lighting['fitting_type']}")
+                        total_load += lighting['total_watts']
+                
+                # Socket Results
+                if include_sockets:
+                    st.write("### 🔌 Sockets")
+                    sockets = engine.calculate_sockets(selected_room, length, width)
+                    if sockets:
+                        col_s1, col_s2, col_s3 = st.columns(3)
+                        col_s1.metric("Sockets", sockets['num_sockets'])
+                        col_s2.metric("Load", f"{sockets['load_watts']} W")
+                        col_s3.metric("Type", sockets['type'][:10])
+                        
+                        total_load += sockets['load_watts']
+                
+                # Total Load
+                st.success(f"### 📊 Total Room Load: {total_load/1000:.2f} kW")
+                st.info(f"**Current (230V):** {total_load/230:.1f} A")
+
+# ==================== TAB 2: CABLE & TRAY ====================
+with tabs[1]:
+    st.header("Cable & Tray Sizing")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Voltage Drop Calculator")
+        
+        cable_size = st.selectbox("Cable Size (mm²)", 
+                                  list(engine.cable_db.keys()), 
+                                  key="vd_cable")
+        current = st.number_input("Load Current (A)", 1.0, 2000.0, 100.0, key="vd_current")
+        distance = st.number_input("Cable Length (m)", 1.0, 1000.0, 50.0, key="vd_distance")
+        
+        # Simple voltage drop calculation (approximate)
+        vd_per_100m = 0.5  # Approximate V drop per 100m per 10A
+        vd = (current / 10) * (distance / 100) * vd_per_100m
+        vd_percent = (vd / 400) * 100
+        
+        with col2:
+            st.subheader("Results")
+            st.metric("Voltage Drop", f"{vd:.2f} V")
+            st.metric("Percentage", f"{vd_percent:.2f}%")
+            
+            if vd_percent <= 4:
+                st.success("✅ Within limit (4%)")
+            else:
+                st.error("❌ Exceeds limit - use larger cable")
+
+# ==================== TAB 3: EV CHARGERS ====================
+with tabs[2]:
+    st.header("🚗 EV Charger Infrastructure")
+    st.markdown("Based on 15% of total carpark lots requirement (7kW per charger)")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        total_lots = st.number_input("Total Carpark Lots", 10, 5000, 200, key="ev_lots")
+        charger_type = st.selectbox("Charger Type",
+                                   ["AC Level 2 (7kW)", "AC Fast (22kW)", "DC Fast (50kW)"],
+                                   key="ev_type")
+        
+        if st.button("Calculate EV Requirements", type="primary", key="calc_ev"):
+            with col2:
+                ev = engine.calculate_ev_chargers(total_lots)
+                
+                st.metric("EV Chargers Required", ev['num_chargers'])
+                st.metric("Total Load", f"{ev['total_load_kw']} kW")
+                st.metric("Diversified Load", f"{ev['diversified_load_kw']} kW")
+                st.metric("Circuits Needed", ev['circuits'])
+                
+                st.info("**Recommendations:**")
+                st.write("- Use Type B RCD for DC leakage")
+                st.write("- Consider smart charging")
+                st.write(f"- Install {ev['circuits']} dedicated circuits")
+
+# ==================== TAB 4: GENERATOR ====================
+with tabs[3]:
+    st.header("Generator Sizing")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        essential_kva = st.number_input("Essential Loads (kVA)", 0.0, 2000.0, 100.0, key="gen_ess")
+        fire_kva = st.number_input("Fire Loads (kVA)", 0.0, 500.0, 30.0, key="gen_fire")
+        motor_kva = st.number_input("Largest Motor Starting (kVA)", 0.0, 500.0, 50.0, key="gen_motor")
+        
+        if st.button("Size Generator", type="primary", key="calc_gen"):
+            total_running = essential_kva + fire_kva
+            required = max(total_running * 1.2, motor_kva * 1.2)
+            
+            std_sizes = [20, 30, 45, 60, 80, 100, 125, 150, 200, 250, 300, 400, 500, 630]
+            recommended = next((x for x in std_sizes if x >= required), required)
+            
+            with col2:
+                st.metric("Running Load", f"{total_running:.0f} kVA")
+                st.metric("Required Size", f"{required:.0f} kVA")
+                st.success(f"### Recommended: {recommended:.0f} kVA")
+
+# ==================== TAB 5: LIGHTNING ====================
+with tabs[4]:
+    st.header("Lightning Protection")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        bldg_length = st.number_input("Building Length (m)", 1.0, 500.0, 50.0, key="lp_length")
+        bldg_width = st.number_input("Building Width (m)", 1.0, 500.0, 30.0, key="lp_width")
+        bldg_height = st.number_input("Building Height (m)", 1.0, 100.0, 15.0, key="lp_height")
+        
+        if st.button("Calculate Protection", type="primary", key="calc_lp"):
+            area = bldg_length * bldg_width
+            perimeter = 2 * (bldg_length + bldg_width)
+            
+            # Simplified calculation
+            num_terminals = math.ceil(perimeter / 10)
+            num_down = max(2, math.ceil(perimeter / 20))
+            
+            with col2:
+                st.metric("Building Area", f"{area:,.0f} m²")
+                st.metric("Air Terminals", num_terminals)
+                st.metric("Down Conductors", num_down)
+                st.metric("Test Joints", num_down)
+
+# ==================== TAB 6: EARTHING ====================
+with tabs[5]:
+    st.header("Earthing System")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        bldg_area = st.number_input("Building Area (m²)", 1.0, 50000.0, 2000.0, key="earth_area")
+        has_fuel = st.checkbox("Has Fuel Tank", True, key="earth_fuel")
+        soil_type = st.selectbox("Soil Condition", ["Normal", "Poor"], key="earth_soil")
+        
+        if st.button("Calculate Earth Pits", type="primary", key="calc_earth"):
+            # Simplified calculation
+            gen_pits = 3 if soil_type == "Poor" else 2
+            fuel_pits = 1 if has_fuel else 0
+            
+            if bldg_area <= 500:
+                light_pits = 2
+            elif bldg_area <= 2000:
+                light_pits = 4
+            elif bldg_area <= 5000:
+                light_pits = 6
+            else:
+                light_pits = 8 + math.ceil((bldg_area - 5000) / 2000)
+            
+            total = gen_pits + fuel_pits + light_pits
+            
+            with col2:
+                st.metric("Generator Earth Pits", gen_pits)
+                st.metric("Fuel Tank Pits", fuel_pits)
+                st.metric("Lightning Pits", light_pits)
+                st.success(f"### Total Required: {total} earth pits")
+
+# ==================== TAB 7: MSB DESIGN ====================
+with tabs[6]:
+    st.header("Main Switchboard Design")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        total_load_kw = st.number_input("Total Load (kW)", 10.0, 5000.0, 400.0, key="msb_load")
+        pf = st.slider("Power Factor", 0.7, 1.0, 0.85, key="msb_pf")
+        
+        # Calculate current
+        current = (total_load_kw * 1000) / (1.732 * 400 * pf)
+        
+        # Get breaker
+        at, af = engine.get_breaker(current)
+        breaker_type = "ACB" if af >= 800 else "MCCB" if af > 63 else "MCB"
+        
+        with col2:
+            st.metric("Design Current", f"{current:.0f} A")
+            st.success(f"**Incomer:** {at}A / {af}A Frame - {breaker_type}")
+
+# ==================== TAB 8: MAINTENANCE ====================
+with tabs[7]:
+    st.header("Maintenance Management")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        equipment = st.selectbox("Equipment Type", 
+                                list(engine.equipment_lifetime.keys()),
+                                key="maint_equip")
+        hours = st.slider("Operating Hours", 0, 50000, 5000, key="maint_hours")
+        last_service = st.date_input("Last Service Date", 
+                                    datetime.now() - timedelta(days=180),
+                                    key="maint_date")
+        
+        if st.button("Check Status", type="primary", key="check_maint"):
+            pred = engine.predict_maintenance(equipment, hours, last_service)
+            
+            with col2:
+                status_color = {"Good": "🟢", "Warning": "🟡", "Critical": "🔴"}
+                st.metric("Status", f"{status_color.get(pred['status'], '⚪')} {pred['status']}")
+                
+                if pred['status'] == "Critical":
+                    st.error("⚠️ Immediate action required!")
+                elif pred['status'] == "Warning":
+                    st.warning("⚠️ Schedule maintenance soon")
+                else:
+                    st.success("✅ Equipment healthy")
+
+# ==================== FOOTER ====================
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center'>
+    <p>© SG Electrical Design Pro | Version 3.2 | Compliant with Singapore Standards</p>
+    <p style='font-size: 0.8em; color: gray'>Made for installers, engineers, and facility managers</p>
+</div>
+""", unsafe_allow_html=True)
         # ==================== CORE ELECTRICAL PARAMETERS ====================
         
         # Standard AT/AF Mapping
@@ -974,3 +1445,4 @@ class SGProEngine:
         if "Kitchen" in room_type or "Workshop" in room_type or "Factory" in room_type:
             wall = self.fan_database["Wall Mounted Fan (Oscillating)"]
             num = math.ceil(area / 100) 
+
