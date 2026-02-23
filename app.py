@@ -21,13 +21,21 @@ class SGProEngine:
         self.standard_frames = [63, 100, 125, 160, 250, 400, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000]
         self.standard_trips = [6, 10, 16, 20, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000]
         
-        # Cable Database
+        # Cable Iz (Current Capacity) for Cu/XLPE/SWA/PVC - Table 4E4A (SS 638)
         self.cable_db = {
             1.5: 25, 2.5: 33, 4: 43, 6: 56, 10: 77, 16: 102, 25: 135, 35: 166, 
-            50: 201, 70: 255, 95: 309, 120: 358, 150: 410, 185: 469, 240: 551, 300: 627
+            50: 201, 70: 255, 95: 309, 120: 358, 150: 410, 185: 469, 240: 551, 300: 627,
+            400: 750, 500: 860, 630: 980
         }
         
-        # Cable impedance
+        # Cable diameter database for tray/trunking sizing
+        self.cable_diameters = {
+            1.5: 12, 2.5: 13, 4: 14, 6: 15, 10: 17, 16: 19, 25: 22, 35: 24,
+            50: 27, 70: 30, 95: 33, 120: 36, 150: 39, 185: 42, 240: 46, 300: 50,
+            400: 55, 500: 60, 630: 65
+        }
+        
+        # Cable resistance and reactance for voltage drop
         self.cable_impedance = {
             1.5: {"r": 14.8, "x": 0.145},
             2.5: {"r": 8.91, "x": 0.135},
@@ -47,11 +55,113 @@ class SGProEngine:
             300: {"r": 0.0795, "x": 0.085}
         }
         
-        # Cable diameters
-        self.cable_diameters = {
-            1.5: 12, 2.5: 13, 4: 14, 6: 15, 10: 17, 16: 19, 25: 22, 35: 24,
-            50: 27, 70: 30, 95: 33, 120: 36, 150: 39, 185: 42, 240: 46, 300: 50
+        # ==================== CABLE CONTAINMENT DATABASE ====================
+        
+        # Cable tray types and fill factors (based on SS 638 / IEC 61537)
+        self.tray_types = {
+            "Perforated Cable Tray": {
+                "fill_factor": 0.4,  # 40% maximum fill
+                "description": "Good ventilation, suitable for power cables",
+                "typical_uses": ["General power distribution", "Mixed cable types"],
+                "advantages": ["Good heat dissipation", "Light weight", "Easy cable fixing"]
+            },
+            "Ladder Type Tray": {
+                "fill_factor": 0.4,  # 40% maximum fill
+                "description": "Best for large cables, maximum ventilation",
+                "typical_uses": ["Large power cables", "High current cables", "Industrial installations"],
+                "advantages": ["Excellent ventilation", "Low weight", "Easy derating"]
+            },
+            "Solid Bottom Tray": {
+                "fill_factor": 0.3,  # 30% maximum fill
+                "description": "Dust protection, limited ventilation",
+                "typical_uses": ["Clean rooms", "Dusty environments", "Control cables"],
+                "advantages": ["Dust protection", "Neat appearance", "Cable security"]
+            },
+            "Wire Mesh Tray": {
+                "fill_factor": 0.35,  # 35% maximum fill
+                "description": "Flexible, good for data and small cables",
+                "typical_uses": ["Data cables", "Control wiring", "Small power cables"],
+                "advantages": ["Flexible routing", "Good visibility", "Easy modifications"]
+            }
         }
+        
+        # Standard cable tray widths (mm)
+        self.standard_tray_widths = [50, 100, 150, 200, 300, 400, 450, 500, 600, 750, 900]
+        
+        # Standard cable tray depths (mm)
+        self.standard_tray_depths = [50, 75, 100, 150]
+        
+        # Cable trunking types (enclosed)
+        self.trunking_types = {
+            "PVC Trunking": {
+                "fill_factor": 0.35,  # 35% maximum fill
+                "description": "General purpose, non-metallic",
+                "typical_uses": ["Lighting circuits", "Small power", "Data cables"],
+                "advantages": ["Non-corrosive", "Light weight", "Easy installation"]
+            },
+            "Galvanized Steel Trunking": {
+                "fill_factor": 0.4,  # 40% maximum fill
+                "description": "Heavy duty, metallic",
+                "typical_uses": ["Main feeders", "Industrial", "Fire rated installations"],
+                "advantages": ["Strong", "Fire resistant", "EMC shielding"]
+            },
+            "Stainless Steel Trunking": {
+                "fill_factor": 0.4,  # 40% maximum fill
+                "description": "Corrosion resistant, hygienic",
+                "typical_uses": ["Food industry", "Pharmaceutical", "Outdoor"],
+                "advantages": ["Corrosion resistant", "Hygienic", "Long life"]
+            }
+        }
+        
+        # Standard trunking sizes (width × height in mm)
+        self.standard_trunking_sizes = [
+            {"width": 50, "height": 50},
+            {"width": 75, "height": 50},
+            {"width": 100, "height": 50},
+            {"width": 100, "height": 75},
+            {"width": 150, "height": 75},
+            {"width": 150, "height": 100},
+            {"width": 200, "height": 100},
+            {"width": 225, "height": 100},
+            {"width": 250, "height": 100},
+            {"width": 300, "height": 100},
+            {"width": 300, "height": 150},
+            {"width": 400, "height": 150},
+            {"width": 450, "height": 150},
+            {"width": 500, "height": 150},
+            {"width": 600, "height": 150}
+        ]
+        
+        # Conduit types
+        self.conduit_types = {
+            "PVC Conduit (Light)": {
+                "fill_factor": 0.4,  # 40% maximum fill
+                "description": "General purpose, non-metallic",
+                "typical_uses": ["Concealed wiring", "Lighting circuits", "Socket outlets"],
+                "advantages": ["Corrosion resistant", "Light weight", "Low cost"]
+            },
+            "PVC Conduit (Heavy)": {
+                "fill_factor": 0.4,  # 40% maximum fill
+                "description": "Heavy duty, impact resistant",
+                "typical_uses": ["Surface mounting", "Industrial", "Outdoor"],
+                "advantages": ["High impact strength", "UV resistant", "Durable"]
+            },
+            "Galvanized Steel Conduit": {
+                "fill_factor": 0.4,  # 40% maximum fill
+                "description": "Metallic, high protection",
+                "typical_uses": ["Industrial", "Fire rated", "EMC sensitive areas"],
+                "advantages": ["Mechanical protection", "Fire resistant", "EMC shielding"]
+            },
+            "Flexible Conduit": {
+                "fill_factor": 0.35,  # 35% maximum fill
+                "description": "Flexible, for final connections",
+                "typical_uses": ["Motor connections", "Vibrating equipment", "Final connections"],
+                "advantages": ["Flexible", "Easy installation", "Vibration resistant"]
+            }
+        }
+        
+        # Standard conduit diameters (mm)
+        self.standard_conduit_sizes = [16, 20, 25, 32, 40, 50, 63, 75, 90, 110]
         
         # Lighting Standards
         self.lighting_standards = {
@@ -335,7 +445,7 @@ class SGProEngine:
             }
         }
         
-        # Ventilation requirements (ACH - Air Changes per Hour)
+        # Ventilation requirements
         self.ventilation_requirements = {
             "Office": {"ac": 6, "non_ac": 8, "purpose": "Fresh air for occupants"},
             "Meeting Room": {"ac": 8, "non_ac": 12, "purpose": "Higher occupancy"},
@@ -403,6 +513,220 @@ class SGProEngine:
         vd = vd_per_km * length / 1000
         vd_percent = (vd / 400) * 100
         return round(vd, 2), round(vd_percent, 2)
+    
+    # ==================== CABLE CONTAINMENT SIZING METHODS ====================
+    
+    def calculate_tray_size(self, cables, tray_depth=50, tray_type="Perforated Cable Tray", spare_percent=20):
+        """
+        Calculate required cable tray size based on cable diameters
+        Includes spare capacity (default 20%)
+        """
+        total_area = 0
+        cable_details = []
+        
+        for cable_size in cables:
+            if cable_size in self.cable_diameters:
+                diameter = self.cable_diameters[cable_size]
+                radius = diameter / 2
+                area = math.pi * (radius ** 2)
+                total_area += area
+                cable_details.append({
+                    "size": cable_size,
+                    "diameter": diameter,
+                    "area": round(area, 0)
+                })
+        
+        # Get fill factor for selected tray type
+        fill_factor = self.tray_types[tray_type]["fill_factor"]
+        
+        # Apply spare capacity
+        spare_multiplier = 1 + (spare_percent / 100)
+        total_area_with_spare = total_area * spare_multiplier
+        
+        # Calculate required width
+        required_width = total_area_with_spare / (tray_depth * fill_factor)
+        
+        # Select standard tray width
+        selected_width = next((w for w in self.standard_tray_widths if w >= required_width), 
+                              self.standard_tray_widths[-1])
+        
+        # Calculate actual fill percentages
+        actual_fill = (total_area / (selected_width * tray_depth)) * 100
+        actual_fill_with_spare = (total_area_with_spare / (selected_width * tray_depth)) * 100
+        
+        return {
+            "total_cable_area": round(total_area),
+            "total_area_with_spare": round(total_area_with_spare),
+            "required_width": round(required_width, 1),
+            "selected_width": selected_width,
+            "tray_depth": tray_depth,
+            "tray_type": tray_type,
+            "fill_factor": fill_factor * 100,
+            "actual_fill_percentage": round(actual_fill, 1),
+            "actual_fill_with_spare": round(actual_fill_with_spare, 1),
+            "spare_percent": spare_percent,
+            "cable_details": cable_details,
+            "is_adequate": actual_fill_with_spare <= (fill_factor * 100)
+        }
+    
+    def calculate_trunking_size(self, cables, trunking_type="Galvanized Steel Trunking", spare_percent=20):
+        """
+        Calculate required trunking size based on cable diameters
+        Includes spare capacity (default 20%)
+        """
+        total_area = 0
+        cable_details = []
+        
+        for cable_size in cables:
+            if cable_size in self.cable_diameters:
+                diameter = self.cable_diameters[cable_size]
+                radius = diameter / 2
+                area = math.pi * (radius ** 2)
+                total_area += area
+                cable_details.append({
+                    "size": cable_size,
+                    "diameter": diameter,
+                    "area": round(area, 0)
+                })
+        
+        # Get fill factor for selected trunking type
+        fill_factor = self.trunking_types[trunking_type]["fill_factor"]
+        
+        # Apply spare capacity
+        spare_multiplier = 1 + (spare_percent / 100)
+        total_area_with_spare = total_area * spare_multiplier
+        
+        # Find suitable trunking size
+        suitable_sizes = []
+        for size in self.standard_trunking_sizes:
+            trunking_area = size["width"] * size["height"]
+            available_area = trunking_area * fill_factor
+            if available_area >= total_area_with_spare:
+                suitable_sizes.append({
+                    "width": size["width"],
+                    "height": size["height"],
+                    "area": trunking_area,
+                    "available_area": available_area,
+                    "fill_percentage": (total_area / trunking_area) * 100,
+                    "fill_with_spare": (total_area_with_spare / trunking_area) * 100
+                })
+        
+        if suitable_sizes:
+            # Select smallest suitable size
+            selected = min(suitable_sizes, key=lambda x: x["width"] * x["height"])
+        else:
+            selected = {
+                "width": ">600",
+                "height": ">150",
+                "area": "Multiple trunking required",
+                "fill_percentage": 0,
+                "fill_with_spare": 0
+            }
+        
+        return {
+            "total_cable_area": round(total_area),
+            "total_area_with_spare": round(total_area_with_spare),
+            "fill_factor": fill_factor * 100,
+            "spare_percent": spare_percent,
+            "trunking_type": trunking_type,
+            "selected_size": selected,
+            "cable_details": cable_details,
+            "suitable_sizes": suitable_sizes
+        }
+    
+    def calculate_conduit_size(self, cables, conduit_type="PVC Conduit (Light)", spare_percent=20):
+        """
+        Calculate required conduit size based on cable diameters
+        Includes spare capacity (default 20%)
+        """
+        total_area = 0
+        cable_details = []
+        
+        for cable_size in cables:
+            if cable_size in self.cable_diameters:
+                diameter = self.cable_diameters[cable_size]
+                radius = diameter / 2
+                area = math.pi * (radius ** 2)
+                total_area += area
+                cable_details.append({
+                    "size": cable_size,
+                    "diameter": diameter,
+                    "area": round(area, 0)
+                })
+        
+        # Get fill factor for selected conduit type
+        fill_factor = self.conduit_types[conduit_type]["fill_factor"]
+        
+        # Apply spare capacity
+        spare_multiplier = 1 + (spare_percent / 100)
+        total_area_with_spare = total_area * spare_multiplier
+        
+        # Find suitable conduit size
+        suitable_sizes = []
+        for diameter in self.standard_conduit_sizes:
+            conduit_area = math.pi * ((diameter/2) ** 2)
+            available_area = conduit_area * fill_factor
+            if available_area >= total_area_with_spare:
+                suitable_sizes.append({
+                    "diameter": diameter,
+                    "area": round(conduit_area),
+                    "available_area": round(available_area),
+                    "fill_percentage": (total_area / conduit_area) * 100,
+                    "fill_with_spare": (total_area_with_spare / conduit_area) * 100
+                })
+        
+        if suitable_sizes:
+            # Select smallest suitable size
+            selected = min(suitable_sizes, key=lambda x: x["diameter"])
+        else:
+            selected = {
+                "diameter": ">110",
+                "area": "Multiple conduits required",
+                "fill_percentage": 0,
+                "fill_with_spare": 0
+            }
+        
+        return {
+            "total_cable_area": round(total_area),
+            "total_area_with_spare": round(total_area_with_spare),
+            "fill_factor": fill_factor * 100,
+            "spare_percent": spare_percent,
+            "conduit_type": conduit_type,
+            "selected_size": selected,
+            "cable_details": cable_details,
+            "suitable_sizes": suitable_sizes
+        }
+    
+    def select_cable(self, ib, length, pf=0.85, max_vd=4):
+        """Select cable based on current and voltage drop"""
+        suitable = []
+        for size, iz in self.cable_db.items():
+            if iz >= ib * 1.25:  # 25% safety margin
+                vd, vd_percent = self.calculate_voltage_drop(size, ib, length, pf)
+                if vd_percent and vd_percent <= max_vd:
+                    suitable.append({
+                        "size": size,
+                        "iz": iz,
+                        "vd": vd,
+                        "vd_percent": vd_percent
+                    })
+        
+        if suitable:
+            return min(suitable, key=lambda x: x["size"])
+        else:
+            # Find largest that meets current
+            current_suitable = [{"size": s, "iz": iz} for s, iz in self.cable_db.items() if iz >= ib * 1.25]
+            if current_suitable:
+                largest = max(current_suitable, key=lambda x: x["size"])
+                vd, vd_percent = self.calculate_voltage_drop(largest["size"], ib, length, pf)
+                return {
+                    "size": largest["size"],
+                    "iz": largest["iz"],
+                    "vd": vd,
+                    "vd_percent": vd_percent,
+                    "warning": f"Voltage drop ({vd_percent}%) exceeds {max_vd}%"
+                }
+            return {"error": "No suitable cable found"}
     
     def calculate_lighting(self, room_type, length, width, height):
         """Calculate lighting requirements for large spaces"""
@@ -882,9 +1206,8 @@ with st.sidebar:
     st.markdown(f"[💰 Donate via PayPal]({paypal_url})")
     
     st.markdown("---")
-    st.markdown(f"**Version:** 3.4 | **Updated:** 2024")
-    st.markdown("**Supports large spaces up to 500m**")
-    st.markdown("**Fan Types:** HVLS, Ceiling, Wall, Pedestal, Exhaust, Jet")
+    st.markdown(f"**Version:** 3.5 | **Updated:** 2024")
+    st.markdown("**Supports:** Large spaces, HVLS fans, Cable containment with 20% spare")
 
 # ==================== MAIN TABS ====================
 st.title("🏗️ SG Electrical Design Professional")
@@ -905,7 +1228,7 @@ tab_names = [
 
 tabs = st.tabs(tab_names)
 
-# ==================== TAB 1: ROOM DESIGN (with Fan Selection) ====================
+# ==================== TAB 1: ROOM DESIGN ====================
 with tabs[0]:
     st.header("Room Electrical Design")
     st.markdown("Design lighting, socket outlets, and ventilation fans for any space (up to 500m length)")
@@ -1055,40 +1378,290 @@ with tabs[0]:
                 if total_load/230 > 100:
                     st.warning("💡 Consider 3-phase supply for loads >100A")
 
-# ==================== TAB 2: CABLE & TRAY ====================
+# ==================== TAB 2: CABLE & TRAY (Enhanced with 20% spare) ====================
 with tabs[1]:
-    st.header("Cable & Tray Sizing")
+    st.header("🔌 Cable & Containment Sizing")
+    st.markdown("Calculate voltage drop and size cable trays, trunking, and conduits with **20% spare capacity**")
     
-    col1, col2 = st.columns(2)
+    # Create sub-tabs for different containment types
+    containment_tabs = st.tabs(["Voltage Drop", "Cable Tray", "Cable Trunking", "Conduit"])
     
-    with col1:
-        st.subheader("Voltage Drop Calculator")
+    # ===== VOLTAGE DROP TAB =====
+    with containment_tabs[0]:
+        col1, col2 = st.columns(2)
         
-        cable_size = st.selectbox("Cable Size (mm²)", 
-                                  list(engine.cable_impedance.keys()), 
-                                  key="vd_cable_size")
-        current = st.number_input("Load Current (A)", 1.0, 2000.0, 100.0, key="vd_current")
-        distance = st.number_input("Cable Length (m)", 1.0, 1000.0, 50.0, key="vd_distance")
-        pf = st.slider("Power Factor", 0.7, 1.0, 0.85, key="vd_pf")
-        
-        if st.button("Calculate Voltage Drop", type="primary", key="calc_vd"):
-            vd, vd_pct = engine.calculate_voltage_drop(cable_size, current, distance, pf)
+        with col1:
+            st.subheader("Voltage Drop Calculator")
             
-            with col2:
-                st.subheader("Results")
-                if vd is not None:
-                    st.metric("Voltage Drop", f"{vd} V")
-                    st.metric("Percentage", f"{vd_pct}%")
-                    
-                    if vd_pct <= 4:
-                        st.success("✅ Within acceptable limit (4%)")
-                    else:
-                        st.error("❌ Exceeds 4% limit - use larger cable")
+            cable_size = st.selectbox("Cable Size (mm²)", 
+                                      list(engine.cable_impedance.keys()), 
+                                      key="vd_cable_size")
+            current = st.number_input("Load Current (A)", 1.0, 2000.0, 100.0, key="vd_current")
+            distance = st.number_input("Cable Length (m)", 1.0, 1000.0, 50.0, key="vd_distance")
+            pf = st.slider("Power Factor", 0.7, 1.0, 0.85, key="vd_pf")
+            
+            if st.button("Calculate Voltage Drop", type="primary", key="calc_vd"):
+                vd, vd_pct = engine.calculate_voltage_drop(cable_size, current, distance, pf)
+                
+                with col2:
+                    st.subheader("📊 Results")
+                    if vd is not None:
+                        st.metric("Voltage Drop", f"{vd} V")
+                        st.metric("Percentage", f"{vd_pct}%")
                         
-                        # Suggest larger cable
-                        larger_sizes = [s for s in engine.cable_impedance.keys() if s > cable_size]
-                        if larger_sizes:
-                            st.info(f"Try: {larger_sizes[0]} mm² or larger")
+                        if vd_pct <= 4:
+                            st.success("✅ Within acceptable limit (4%)")
+                        else:
+                            st.error("❌ Exceeds 4% limit - use larger cable")
+                            
+                            # Suggest larger cable
+                            larger_sizes = [s for s in engine.cable_impedance.keys() if s > cable_size]
+                            if larger_sizes:
+                                st.info(f"Try: {larger_sizes[0]} mm² or larger")
+    
+    # ===== CABLE TRAY TAB =====
+    with containment_tabs[1]:
+        st.subheader("📦 Cable Tray Sizing")
+        st.markdown("Calculate required tray size with **20% spare capacity** for future cables")
+        
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            # Cable selection
+            st.write("### Select Cables in Tray")
+            
+            num_cable_types = st.number_input("Number of Different Cable Sizes", 1, 10, 3, key="tray_num_types")
+            
+            cables_in_tray = []
+            cable_inputs = []
+            
+            for i in range(num_cable_types):
+                col_c, col_q = st.columns(2)
+                with col_c:
+                    size = st.selectbox(f"Cable {i+1} Size (mm²)", 
+                                       list(engine.cable_diameters.keys()), 
+                                       key=f"tray_cable_{i}")
+                with col_q:
+                    qty = st.number_input(f"Quantity", 1, 100, 5, key=f"tray_qty_{i}")
+                
+                cable_inputs.append({"size": size, "qty": qty})
+                for _ in range(qty):
+                    cables_in_tray.append(size)
+            
+            # Tray parameters
+            st.write("### Tray Parameters")
+            
+            tray_type = st.selectbox("Tray Type", 
+                                    list(engine.tray_types.keys()), 
+                                    key="tray_type_select")
+            
+            tray_depth = st.selectbox("Tray Depth (mm)", 
+                                     engine.standard_tray_depths, 
+                                     key="tray_depth_select")
+            
+            # Show tray type information
+            with st.expander("ℹ️ Tray Type Information"):
+                tray_info = engine.tray_types[tray_type]
+                st.write(f"**Description:** {tray_info['description']}")
+                st.write(f"**Max Fill Factor:** {tray_info['fill_factor']*100}%")
+                st.write(f"**Typical Uses:** {', '.join(tray_info['typical_uses'])}")
+                st.write(f"**Advantages:** {', '.join(tray_info['advantages'])}")
+            
+            # Spare capacity (fixed at 20% but can be adjusted)
+            spare_percent = st.slider("Spare Capacity %", 0, 50, 20, key="tray_spare")
+            
+            if st.button("Calculate Tray Size", type="primary", key="calc_tray"):
+                result = engine.calculate_tray_size(cables_in_tray, tray_depth, tray_type, spare_percent)
+                
+                with col2:
+                    st.subheader("📊 Tray Sizing Results")
+                    
+                    # Summary metrics
+                    col_m1, col_m2 = st.columns(2)
+                    with col_m1:
+                        st.metric("Total Cable Area", f"{result['total_cable_area']} mm²")
+                    with col_m2:
+                        st.metric("With {spare_percent}% Spare", f"{result['total_area_with_spare']} mm²")
+                    
+                    st.metric("Required Tray Width", f"{result['required_width']:.0f} mm")
+                    
+                    # Selected tray
+                    st.success(f"### ✅ Selected Tray: {result['selected_width']} mm wide × {result['tray_depth']} mm deep")
+                    
+                    # Fill percentages
+                    col_f1, col_f2 = st.columns(2)
+                    with col_f1:
+                        st.metric("Actual Fill", f"{result['actual_fill_percentage']}%")
+                    with col_f2:
+                        st.metric("Fill with Spare", f"{result['actual_fill_with_spare']}%")
+                    
+                    # Adequacy check
+                    if result['is_adequate']:
+                        st.success(f"✅ Tray size is adequate (fill ≤ {result['fill_factor']}%)")
+                    else:
+                        st.error(f"❌ Tray is overfilled! Fill with spare ({result['actual_fill_with_spare']}%) exceeds maximum ({result['fill_factor']}%)")
+                        st.info("💡 Consider:\n- Using a larger tray\n- Adding another tray\n- Reducing cables per tray")
+                    
+                    # Cable details
+                    with st.expander("📋 Cable Details"):
+                        for cable in result['cable_details']:
+                            st.write(f"- {cable['size']}mm²: Ø{cable['diameter']}mm, Area {cable['area']}mm²")
+    
+    # ===== CABLE TRUNKING TAB =====
+    with containment_tabs[2]:
+        st.subheader("📦 Cable Trunking Sizing")
+        st.markdown("Calculate required trunking size with **20% spare capacity** for future cables")
+        
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            # Cable selection
+            st.write("### Select Cables in Trunking")
+            
+            num_cable_types_trunk = st.number_input("Number of Different Cable Sizes", 1, 10, 3, key="trunk_num_types")
+            
+            cables_in_trunk = []
+            
+            for i in range(num_cable_types_trunk):
+                col_c, col_q = st.columns(2)
+                with col_c:
+                    size = st.selectbox(f"Cable {i+1} Size (mm²)", 
+                                       list(engine.cable_diameters.keys()), 
+                                       key=f"trunk_cable_{i}")
+                with col_q:
+                    qty = st.number_input(f"Quantity", 1, 100, 5, key=f"trunk_qty_{i}")
+                
+                for _ in range(qty):
+                    cables_in_trunk.append(size)
+            
+            # Trunking parameters
+            st.write("### Trunking Parameters")
+            
+            trunking_type = st.selectbox("Trunking Type", 
+                                        list(engine.trunking_types.keys()), 
+                                        key="trunking_type_select")
+            
+            # Show trunking type information
+            with st.expander("ℹ️ Trunking Type Information"):
+                trunk_info = engine.trunking_types[trunking_type]
+                st.write(f"**Description:** {trunk_info['description']}")
+                st.write(f"**Max Fill Factor:** {trunk_info['fill_factor']*100}%")
+                st.write(f"**Typical Uses:** {', '.join(trunk_info['typical_uses'])}")
+                st.write(f"**Advantages:** {', '.join(trunk_info['advantages'])}")
+            
+            # Spare capacity
+            spare_percent_trunk = st.slider("Spare Capacity %", 0, 50, 20, key="trunk_spare")
+            
+            if st.button("Calculate Trunking Size", type="primary", key="calc_trunk"):
+                result = engine.calculate_trunking_size(cables_in_trunk, trunking_type, spare_percent_trunk)
+                
+                with col2:
+                    st.subheader("📊 Trunking Sizing Results")
+                    
+                    # Summary metrics
+                    col_m1, col_m2 = st.columns(2)
+                    with col_m1:
+                        st.metric("Total Cable Area", f"{result['total_cable_area']} mm²")
+                    with col_m2:
+                        st.metric(f"With {spare_percent_trunk}% Spare", f"{result['total_area_with_spare']} mm²")
+                    
+                    # Selected trunking
+                    if isinstance(result['selected_size']['width'], int):
+                        st.success(f"### ✅ Selected Trunking: {result['selected_size']['width']} × {result['selected_size']['height']} mm")
+                        st.metric("Fill Percentage", f"{result['selected_size']['fill_percentage']:.1f}%")
+                        st.metric("Fill with Spare", f"{result['selected_size']['fill_with_spare']:.1f}%")
+                        
+                        if result['selected_size']['fill_with_spare'] <= result['fill_factor']:
+                            st.success(f"✅ Trunking size is adequate (fill ≤ {result['fill_factor']}%)")
+                        else:
+                            st.error(f"❌ Trunking is overfilled! Fill with spare ({result['selected_size']['fill_with_spare']:.1f}%) exceeds maximum ({result['fill_factor']}%)")
+                    else:
+                        st.error("❌ No standard trunking size available")
+                        st.info("💡 Consider:\n- Using multiple trunking runs\n- Using larger custom trunking")
+                    
+                    # Suitable sizes
+                    if result['suitable_sizes']:
+                        with st.expander("📋 Suitable Trunking Sizes"):
+                            for size in result['suitable_sizes'][:5]:  # Show first 5
+                                st.write(f"- {size['width']}×{size['height']}mm: Fill {size['fill_percentage']:.1f}% (with spare: {size['fill_with_spare']:.1f}%)")
+    
+    # ===== CONDUIT TAB =====
+    with containment_tabs[3]:
+        st.subheader("📦 Conduit Sizing")
+        st.markdown("Calculate required conduit size with **20% spare capacity** for future cables")
+        
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            # Cable selection
+            st.write("### Select Cables in Conduit")
+            
+            num_cable_types_cond = st.number_input("Number of Different Cable Sizes", 1, 10, 2, key="cond_num_types")
+            
+            cables_in_conduit = []
+            
+            for i in range(num_cable_types_cond):
+                col_c, col_q = st.columns(2)
+                with col_c:
+                    size = st.selectbox(f"Cable {i+1} Size (mm²)", 
+                                       list(engine.cable_diameters.keys()), 
+                                       key=f"cond_cable_{i}")
+                with col_q:
+                    qty = st.number_input(f"Quantity", 1, 100, 3, key=f"cond_qty_{i}")
+                
+                for _ in range(qty):
+                    cables_in_conduit.append(size)
+            
+            # Conduit parameters
+            st.write("### Conduit Parameters")
+            
+            conduit_type = st.selectbox("Conduit Type", 
+                                       list(engine.conduit_types.keys()), 
+                                       key="conduit_type_select")
+            
+            # Show conduit type information
+            with st.expander("ℹ️ Conduit Type Information"):
+                cond_info = engine.conduit_types[conduit_type]
+                st.write(f"**Description:** {cond_info['description']}")
+                st.write(f"**Max Fill Factor:** {cond_info['fill_factor']*100}%")
+                st.write(f"**Typical Uses:** {', '.join(cond_info['typical_uses'])}")
+                st.write(f"**Advantages:** {', '.join(cond_info['advantages'])}")
+            
+            # Spare capacity
+            spare_percent_cond = st.slider("Spare Capacity %", 0, 50, 20, key="cond_spare")
+            
+            if st.button("Calculate Conduit Size", type="primary", key="calc_cond"):
+                result = engine.calculate_conduit_size(cables_in_conduit, conduit_type, spare_percent_cond)
+                
+                with col2:
+                    st.subheader("📊 Conduit Sizing Results")
+                    
+                    # Summary metrics
+                    col_m1, col_m2 = st.columns(2)
+                    with col_m1:
+                        st.metric("Total Cable Area", f"{result['total_cable_area']} mm²")
+                    with col_m2:
+                        st.metric(f"With {spare_percent_cond}% Spare", f"{result['total_area_with_spare']} mm²")
+                    
+                    # Selected conduit
+                    if isinstance(result['selected_size']['diameter'], int):
+                        st.success(f"### ✅ Selected Conduit: {result['selected_size']['diameter']} mm diameter")
+                        st.metric("Fill Percentage", f"{result['selected_size']['fill_percentage']:.1f}%")
+                        st.metric("Fill with Spare", f"{result['selected_size']['fill_with_spare']:.1f}%")
+                        
+                        if result['selected_size']['fill_with_spare'] <= result['fill_factor']:
+                            st.success(f"✅ Conduit size is adequate (fill ≤ {result['fill_factor']}%)")
+                        else:
+                            st.error(f"❌ Conduit is overfilled! Fill with spare ({result['selected_size']['fill_with_spare']:.1f}%) exceeds maximum ({result['fill_factor']}%)")
+                    else:
+                        st.error("❌ No standard conduit size available")
+                        st.info("💡 Consider:\n- Using multiple conduits\n- Using larger conduit")
+                    
+                    # Suitable sizes
+                    if result['suitable_sizes']:
+                        with st.expander("📋 Suitable Conduit Sizes"):
+                            for size in result['suitable_sizes']:
+                                st.write(f"- {size['diameter']}mm: Fill {size['fill_percentage']:.1f}% (with spare: {size['fill_with_spare']:.1f}%)")
 
 # ==================== TAB 3: EV CHARGERS ====================
 with tabs[2]:
@@ -1318,7 +1891,7 @@ with tabs[7]:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center'>
-    <p>© SG Electrical Design Pro | Version 3.4 | Compliant with Singapore Standards</p>
-    <p style='font-size: 0.8em; color: gray'>Supports large spaces up to 500m • Comprehensive Fan Selection: HVLS, Ceiling, Wall, Pedestal, Exhaust, Jet</p>
+    <p>© SG Electrical Design Pro | Version 3.5 | Compliant with Singapore Standards</p>
+    <p style='font-size: 0.8em; color: gray'>Complete cable containment design: Trays, Trunking, Conduits with 20% spare capacity • HVLS Fans • EV Chargers</p>
 </div>
 """, unsafe_allow_html=True)
